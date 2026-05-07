@@ -1,0 +1,225 @@
+{
+  "crew": ["C001", "C002", "C003", "C004"],
+  "sites": ["oral", "nasal", "post_auricular", "axillary", "forearm",
+            "occiput", "umbilicus", "gluteal", "glabella", "toe_web"],
+  "timepoints": ["L-92", "L-44", "L-3", "FD2", "FD3", "R+1", "R+45", "R+82"],
+  "baseline_timepoints": ["L-92", "L-44", "L-3"],
+  "scores": {
+    "C001": {
+      "oral":           {"FD2": {"d": 0.42, "ci_lo": 0.31, "ci_hi": 0.55, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.48, "ci_lo": 0.36, "ci_hi": 0.61, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.55, "ci_lo": 0.42, "ci_hi": 0.68, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.21, "ci_lo": 0.12, "ci_hi": 0.31, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+82": {"d": 0.14, "ci_lo": 0.08, "ci_hi": 0.21, "n_baseline": 3, "within_baseline_noise": true}},
+      "nasal":          {"FD2": {"d": 0.18, "ci_lo": 0.10, "ci_hi": 0.27, "n_baseline": 3, "within_baseline_noise": true},
+                         "FD3": {"d": 0.22, "ci_lo": 0.13, "ci_hi": 0.32, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.31, "ci_lo": 0.20, "ci_hi": 0.43, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.19, "ci_lo": 0.11, "ci_hi": 0.28, "n_baseline": 3, "within_baseline_noise": true}},
+      "post_auricular": {"FD2": {"d": 0.34, "ci_lo": 0.22, "ci_hi": 0.47, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.41, "ci_lo": 0.28, "ci_hi": 0.54, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.46, "ci_lo": 0.33, "ci_hi": 0.59, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.18, "ci_lo": 0.10, "ci_hi": 0.28, "n_baseline": 3, "within_baseline_noise": true}},
+      "axillary":       {"FD2": {"d": 0.61, "ci_lo": 0.48, "ci_hi": 0.74, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.67, "ci_lo": 0.54, "ci_hi": 0.81, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.59, "ci_lo": 0.45, "ci_hi": 0.72, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.28, "ci_lo": 0.18, "ci_hi": 0.39, "n_baseline": 3, "within_baseline_noise": false}},
+      "forearm":        {"FD2": {"d": 0.24, "ci_lo": 0.14, "ci_hi": 0.35, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.32, "ci_lo": 0.21, "ci_hi": 0.43, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.16, "ci_lo": 0.09, "ci_hi": 0.24, "n_baseline": 3, "within_baseline_noise": true}},
+      "occiput":        {"FD2": {"d": 0.29, "ci_lo": 0.19, "ci_hi": 0.40, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.38, "ci_lo": 0.26, "ci_hi": 0.50, "n_baseline": 3, "within_baseline_noise": false}},
+      "umbilicus":      {"FD2": {"d": 0.45, "ci_lo": 0.32, "ci_hi": 0.58, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.52, "ci_lo": 0.39, "ci_hi": 0.65, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.48, "ci_lo": 0.35, "ci_hi": 0.61, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.22, "ci_lo": 0.13, "ci_hi": 0.32, "n_baseline": 3, "within_baseline_noise": false}},
+      "gluteal":        {"FD2": {"d": 0.39, "ci_lo": 0.27, "ci_hi": 0.51, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.44, "ci_lo": 0.31, "ci_hi": 0.57, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.20, "ci_lo": 0.12, "ci_hi": 0.30, "n_baseline": 3, "within_baseline_noise": false}},
+      "glabella":       {"FD2": {"d": 0.33, "ci_lo": 0.22, "ci_hi": 0.45, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.41, "ci_lo": 0.29, "ci_hi": 0.53, "n_baseline": 3, "within_baseline_noise": false}},
+      "toe_web":        {"FD2": {"d": 0.27, "ci_lo": 0.17, "ci_hi": 0.38, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.36, "ci_lo": 0.24, "ci_hi": 0.49, "n_baseline": 3, "within_baseline_noise": false}}
+    },
+    "C002": {
+      "oral":           {"FD2": {"d": 0.31, "ci_lo": 0.20, "ci_hi": 0.43, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.38, "ci_lo": 0.26, "ci_hi": 0.51, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.15, "ci_lo": 0.08, "ci_hi": 0.23, "n_baseline": 3, "within_baseline_noise": true}},
+      "nasal":          {"FD2": {"d": 0.52, "ci_lo": 0.40, "ci_hi": 0.65, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.58, "ci_lo": 0.45, "ci_hi": 0.71, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.49, "ci_lo": 0.36, "ci_hi": 0.62, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.24, "ci_lo": 0.15, "ci_hi": 0.34, "n_baseline": 3, "within_baseline_noise": false}},
+      "post_auricular": {"FD2": {"d": 0.22, "ci_lo": 0.13, "ci_hi": 0.32, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.28, "ci_lo": 0.18, "ci_hi": 0.39, "n_baseline": 3, "within_baseline_noise": false}},
+      "axillary":       {"FD2": {"d": 0.43, "ci_lo": 0.30, "ci_hi": 0.56, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.51, "ci_lo": 0.38, "ci_hi": 0.64, "n_baseline": 3, "within_baseline_noise": false}},
+      "forearm":        {"R+1": {"d": 0.19, "ci_lo": 0.11, "ci_hi": 0.28, "n_baseline": 3, "within_baseline_noise": true}},
+      "umbilicus":      {"FD2": {"d": 0.36, "ci_lo": 0.24, "ci_hi": 0.49, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.42, "ci_lo": 0.29, "ci_hi": 0.55, "n_baseline": 3, "within_baseline_noise": false}},
+      "gluteal":        {"R+1": {"d": 0.33, "ci_lo": 0.22, "ci_hi": 0.45, "n_baseline": 3, "within_baseline_noise": false}},
+      "glabella":       {"FD2": {"d": 0.45, "ci_lo": 0.32, "ci_hi": 0.58, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.51, "ci_lo": 0.38, "ci_hi": 0.64, "n_baseline": 3, "within_baseline_noise": false}},
+      "toe_web":        {"R+1": {"d": 0.29, "ci_lo": 0.18, "ci_hi": 0.40, "n_baseline": 3, "within_baseline_noise": false}}
+    },
+    "C003": {
+      "oral":           {"FD2": {"d": 0.62, "ci_lo": 0.49, "ci_hi": 0.75, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.71, "ci_lo": 0.58, "ci_hi": 0.84, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.66, "ci_lo": 0.53, "ci_hi": 0.79, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.34, "ci_lo": 0.22, "ci_hi": 0.46, "n_baseline": 3, "within_baseline_noise": false}},
+      "nasal":          {"FD2": {"d": 0.28, "ci_lo": 0.18, "ci_hi": 0.39, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.34, "ci_lo": 0.22, "ci_hi": 0.46, "n_baseline": 3, "within_baseline_noise": false}},
+      "post_auricular": {"FD2": {"d": 0.41, "ci_lo": 0.28, "ci_hi": 0.54, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.47, "ci_lo": 0.34, "ci_hi": 0.60, "n_baseline": 3, "within_baseline_noise": false}},
+      "axillary":       {"FD2": {"d": 0.71, "ci_lo": 0.58, "ci_hi": 0.84, "n_baseline": 3, "within_baseline_noise": false},
+                         "FD3": {"d": 0.78, "ci_lo": 0.65, "ci_hi": 0.91, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.69, "ci_lo": 0.56, "ci_hi": 0.82, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.39, "ci_lo": 0.27, "ci_hi": 0.51, "n_baseline": 3, "within_baseline_noise": false}},
+      "forearm":        {"FD2": {"d": 0.21, "ci_lo": 0.12, "ci_hi": 0.31, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.26, "ci_lo": 0.16, "ci_hi": 0.37, "n_baseline": 3, "within_baseline_noise": false}},
+      "occiput":        {"R+1": {"d": 0.31, "ci_lo": 0.20, "ci_hi": 0.43, "n_baseline": 3, "within_baseline_noise": false}},
+      "umbilicus":      {"FD2": {"d": 0.55, "ci_lo": 0.42, "ci_hi": 0.68, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.61, "ci_lo": 0.48, "ci_hi": 0.74, "n_baseline": 3, "within_baseline_noise": false}},
+      "gluteal":        {"FD2": {"d": 0.36, "ci_lo": 0.24, "ci_hi": 0.49, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.43, "ci_lo": 0.30, "ci_hi": 0.56, "n_baseline": 3, "within_baseline_noise": false}},
+      "glabella":       {"R+1": {"d": 0.27, "ci_lo": 0.17, "ci_hi": 0.38, "n_baseline": 3, "within_baseline_noise": false}},
+      "toe_web":        {"FD2": {"d": 0.32, "ci_lo": 0.21, "ci_hi": 0.44, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.40, "ci_lo": 0.28, "ci_hi": 0.53, "n_baseline": 3, "within_baseline_noise": false}}
+    },
+    "C004": {
+      "oral":           {"FD2": {"d": 0.25, "ci_lo": 0.15, "ci_hi": 0.36, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.30, "ci_lo": 0.19, "ci_hi": 0.42, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+45": {"d": 0.12, "ci_lo": 0.06, "ci_hi": 0.19, "n_baseline": 3, "within_baseline_noise": true}},
+      "nasal":          {"FD2": {"d": 0.16, "ci_lo": 0.09, "ci_hi": 0.24, "n_baseline": 3, "within_baseline_noise": true},
+                         "R+1": {"d": 0.22, "ci_lo": 0.13, "ci_hi": 0.32, "n_baseline": 3, "within_baseline_noise": false}},
+      "post_auricular": {"FD2": {"d": 0.51, "ci_lo": 0.38, "ci_hi": 0.64, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.58, "ci_lo": 0.45, "ci_hi": 0.71, "n_baseline": 3, "within_baseline_noise": false}},
+      "axillary":       {"FD2": {"d": 0.38, "ci_lo": 0.26, "ci_hi": 0.51, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.45, "ci_lo": 0.32, "ci_hi": 0.58, "n_baseline": 3, "within_baseline_noise": false}},
+      "forearm":        {"FD2": {"d": 0.18, "ci_lo": 0.10, "ci_hi": 0.27, "n_baseline": 3, "within_baseline_noise": true},
+                         "R+1": {"d": 0.24, "ci_lo": 0.14, "ci_hi": 0.34, "n_baseline": 3, "within_baseline_noise": false}},
+      "occiput":        {"FD2": {"d": 0.33, "ci_lo": 0.22, "ci_hi": 0.45, "n_baseline": 3, "within_baseline_noise": false}},
+      "umbilicus":      {"FD2": {"d": 0.29, "ci_lo": 0.18, "ci_hi": 0.40, "n_baseline": 3, "within_baseline_noise": false},
+                         "R+1": {"d": 0.36, "ci_lo": 0.24, "ci_hi": 0.49, "n_baseline": 3, "within_baseline_noise": false}},
+      "gluteal":        {"R+1": {"d": 0.41, "ci_lo": 0.28, "ci_hi": 0.54, "n_baseline": 3, "within_baseline_noise": false}},
+      "glabella":       {"FD2": {"d": 0.20, "ci_lo": 0.11, "ci_hi": 0.30, "n_baseline": 3, "within_baseline_noise": true}},
+      "toe_web":        {"R+1": {"d": 0.34, "ci_lo": 0.22, "ci_hi": 0.46, "n_baseline": 3, "within_baseline_noise": false}}
+    }
+  },
+  "drilldown": {
+    "C001": {
+      "oral": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Streptococcus mitis", "delta": 0.18},
+            {"name": "Veillonella parvula", "delta": 0.11},
+            {"name": "Haemophilus parainfluenzae", "delta": 0.08},
+            {"name": "Neisseria flavescens", "delta": 0.05},
+            {"name": "Granulicatella adiacens", "delta": 0.03}
+          ],
+          "top_taxa_down": [
+            {"name": "Lactobacillus salivarius", "delta": -0.14},
+            {"name": "Rothia dentocariosa", "delta": -0.09},
+            {"name": "Prevotella melaninogenica", "delta": -0.07},
+            {"name": "Actinomyces odontolyticus", "delta": -0.04},
+            {"name": "Fusobacterium nucleatum", "delta": -0.02}
+          ]
+        },
+        "R+1": {
+          "top_taxa_up": [
+            {"name": "Streptococcus mitis", "delta": 0.22},
+            {"name": "Veillonella parvula", "delta": 0.14},
+            {"name": "Haemophilus parainfluenzae", "delta": 0.10}
+          ],
+          "top_taxa_down": [
+            {"name": "Lactobacillus salivarius", "delta": -0.18},
+            {"name": "Rothia dentocariosa", "delta": -0.11}
+          ]
+        }
+      },
+      "axillary": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Staphylococcus epidermidis", "delta": 0.27},
+            {"name": "Corynebacterium tuberculostearicum", "delta": 0.15},
+            {"name": "Cutibacterium acnes", "delta": 0.09}
+          ],
+          "top_taxa_down": [
+            {"name": "Anaerococcus lactolyticus", "delta": -0.19},
+            {"name": "Finegoldia magna", "delta": -0.12},
+            {"name": "Peptoniphilus harei", "delta": -0.08}
+          ]
+        }
+      },
+      "umbilicus": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Staphylococcus aureus", "delta": 0.21},
+            {"name": "Corynebacterium kroppenstedtii", "delta": 0.14}
+          ],
+          "top_taxa_down": [
+            {"name": "Cutibacterium acnes", "delta": -0.16},
+            {"name": "Staphylococcus hominis", "delta": -0.10}
+          ]
+        }
+      }
+    },
+    "C002": {
+      "nasal": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Staphylococcus aureus", "delta": 0.24},
+            {"name": "Corynebacterium accolens", "delta": 0.13},
+            {"name": "Moraxella catarrhalis", "delta": 0.09}
+          ],
+          "top_taxa_down": [
+            {"name": "Cutibacterium acnes", "delta": -0.18},
+            {"name": "Staphylococcus epidermidis", "delta": -0.12},
+            {"name": "Dolosigranulum pigrum", "delta": -0.07}
+          ]
+        }
+      }
+    },
+    "C003": {
+      "oral": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Streptococcus salivarius", "delta": 0.31},
+            {"name": "Veillonella atypica", "delta": 0.18},
+            {"name": "Prevotella histicola", "delta": 0.12}
+          ],
+          "top_taxa_down": [
+            {"name": "Lactobacillus salivarius", "delta": -0.22},
+            {"name": "Rothia mucilaginosa", "delta": -0.15},
+            {"name": "Streptococcus gordonii", "delta": -0.09}
+          ]
+        }
+      },
+      "axillary": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Staphylococcus aureus", "delta": 0.34},
+            {"name": "Corynebacterium tuberculostearicum", "delta": 0.20},
+            {"name": "Anaerococcus vaginalis", "delta": 0.11}
+          ],
+          "top_taxa_down": [
+            {"name": "Staphylococcus hominis", "delta": -0.26},
+            {"name": "Cutibacterium acnes", "delta": -0.17}
+          ]
+        }
+      }
+    },
+    "C004": {
+      "post_auricular": {
+        "FD2": {
+          "top_taxa_up": [
+            {"name": "Cutibacterium acnes", "delta": 0.25},
+            {"name": "Staphylococcus epidermidis", "delta": 0.16}
+          ],
+          "top_taxa_down": [
+            {"name": "Corynebacterium kroppenstedtii", "delta": -0.21},
+            {"name": "Malassezia globosa", "delta": -0.13}
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Recovery, Honestly — Inspiration 4</title>
+  <meta name="description" content="An astronaut-facing dashboard for the SpaceX Inspiration 4 crew: CBC bloodwork trajectories and a body-mapped microbiome view, both wrapped in calibrated uncertainty.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <aside id="honesty-strip" role="note" aria-label="Data limitations">
+    <strong>4 crew members. 3 pre-flight baseline swabs per body site. No in-flight CBC.</strong>
+    Treat all numbers as descriptive of these four people, not predictive.
+  </aside>
+
+  <header class="page-header">
+    <h1>Recovery, Honestly</h1>
+    <p class="subtitle">Am I back to baseline — and where on me did things shift?</p>
+    <span class="mission-tag">SpaceX Inspiration 4 · Sep 2021</span>
+  </header>
+
+  <main>
+
+    <section class="panel" id="cbc-panel">
+      <h2>Bloodwork (CBC) trajectories</h2>
+      <p class="panel-subtitle">
+        Per crew member, the same panels you'd see at a routine doctor's visit — plotted from <span class="mono">L-92</span>
+        through <span class="mono">R+194</span>. Shaded bands are bootstrap CIs anchored on each person's own pre-flight values.
+        The visible gap between <span class="mono">L-3</span> and <span class="mono">R+1</span> is real:
+        no CBC was collected in flight.
+      </p>
+      <div id="cbc-plots" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" id="avatar-section">
+      <h2>Microbiome — where on the body did things shift?</h2>
+      <p class="panel-subtitle">
+        For each crew member, color shows how far that body site's microbial community has drifted from
+        their <em>own</em> pre-flight baseline (Bray–Curtis distance). Click a region to see which organisms
+        drove the shift.
+      </p>
+
+      <div id="timepoint-slider-wrap">
+        <label for="timepoint">Timepoint</label>
+        <input type="range" id="timepoint" min="0" max="7" value="0" step="1" aria-describedby="timepoint-help">
+        <span id="timepoint-label" aria-live="polite">L-92</span>
+      </div>
+      <p class="timepoint-help" id="timepoint-help">
+        L = days before launch · FD = flight day · R = days after return.
+      </p>
+
+      <div id="avatar-grid" role="group" aria-label="Crew member microbiome avatars">
+        <figure data-crew="C001" tabindex="0">
+          <figcaption>C001</figcaption>
+          <div class="avatar"></div>
+        </figure>
+        <figure data-crew="C002" tabindex="0">
+          <figcaption>C002</figcaption>
+          <div class="avatar"></div>
+        </figure>
+        <figure data-crew="C003" tabindex="0">
+          <figcaption>C003</figcaption>
+          <div class="avatar"></div>
+        </figure>
+        <figure data-crew="C004" tabindex="0">
+          <figcaption>C004</figcaption>
+          <div class="avatar"></div>
+        </figure>
+      </div>
+
+      <aside id="legend" aria-label="Color legend">
+        <div class="scale">
+          <span>Distance from baseline:</span>
+          <span class="scale-bar" aria-hidden="true">
+            <span style="background: var(--score-0)"></span>
+            <span style="background: var(--score-1)"></span>
+            <span style="background: var(--score-2)"></span>
+            <span style="background: var(--score-3)"></span>
+            <span style="background: var(--score-4)"></span>
+            <span style="background: var(--score-5)"></span>
+          </span>
+          <span class="scale-labels"><span>near baseline</span> &nbsp;→&nbsp; <span>strongly shifted</span></span>
+        </div>
+        <span class="legend-item"><span class="swatch no-data"></span> no swab collected</span>
+      </aside>
+
+      <section id="drilldown" hidden>
+        <header>
+          <h3 id="drilldown-title">Drill-down</h3>
+          <span class="crew-tag" id="drilldown-tag"></span>
+        </header>
+        <p id="drilldown-summary"></p>
+        <div id="drilldown-content"></div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <h2>What you should and shouldn't take from this</h2>
+      <ul>
+        <li><strong>Personal, not population.</strong> Every score compares you to <em>your own</em> pre-flight baseline. We deliberately avoid implying a population "normal" — n=4 is too small to define one.</li>
+        <li><strong>"Within baseline noise" means we can't tell.</strong> If a post-flight value sits inside the spread of your three pre-flight swabs, we say so explicitly. That's not "you recovered" — it's "we can't distinguish from your normal variation."</li>
+        <li><strong>No clinical recommendations.</strong> This is a research-data viewer, not a medical tool. Anything actionable should go through your flight surgeon.</li>
+        <li><strong>No in-flight CBC.</strong> Blood draws happened before and after the mission, not during. The CBC plots intentionally have a gap between L-3 and R+1 — we don't interpolate across it.</li>
+      </ul>
+    </section>
+
+  </main>
+
+  <footer>
+    <p>
+      Inspiration 4 mission · Data from
+      <a href="https://osdr.nasa.gov/bio/repo/data/studies/OSD-572">OSD-572</a> (microbiome) and
+      <a href="https://osdr.nasa.gov/bio/repo/data/studies/OSD-569">OSD-569</a> (CBC),
+      NASA's Open Science Data Repository.
+    </p>
+    <p>
+      Built for the 2026 Torchlight Sovereignty Hackathon, Track 3 — Communication &amp; Visualization.
+      Crew identifiers (C001–C004) are anonymized and do not correspond to mission roster order.
+    </p>
+  </footer>
+
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="app.js" type="module"></script>
+
+</body>
+</html>

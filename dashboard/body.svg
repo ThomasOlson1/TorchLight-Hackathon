@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 260" preserveAspectRatio="xMidYMid meet" class="body-svg">
+  <!--
+    Stylized 2-view human figure: front + back.
+    Region indicators are <circle> with data-region attributes whose values
+    match the `sites` array in dashboard/data/microbiome.json.
+    Default fill is overridden by JS at runtime (.region[data-fill]).
+  -->
+
+  <defs>
+    <pattern id="no-data-pattern" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#f0f0f0"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#cdcdcd" stroke-width="2"/>
+    </pattern>
+  </defs>
+
+  <!-- ============== FRONT FIGURE ============== -->
+  <g class="figure" data-view="front" transform="translate(0,0)">
+    <!-- head -->
+    <circle class="body-fill" cx="55" cy="28" r="16"/>
+    <!-- neck -->
+    <rect class="body-fill" x="51" y="42" width="8" height="6"/>
+    <!-- torso -->
+    <path class="body-fill" d="M 36 48 Q 55 45 74 48 L 70 116 Q 55 120 40 116 Z"/>
+    <!-- left arm (figure's right, viewer's left) -->
+    <path class="body-fill" d="M 36 50 L 22 105 Q 22 116 30 116 L 36 106 Q 40 80 42 54 Z"/>
+    <!-- right arm -->
+    <path class="body-fill" d="M 74 50 L 88 105 Q 88 116 80 116 L 74 106 Q 70 80 68 54 Z"/>
+    <!-- left leg -->
+    <path class="body-fill" d="M 40 116 L 35 218 Q 35 232 44 232 L 53 218 Q 54 165 53 116 Z"/>
+    <!-- right leg -->
+    <path class="body-fill" d="M 70 116 L 75 218 Q 75 232 66 232 L 57 218 Q 56 165 57 116 Z"/>
+    <!-- feet -->
+    <ellipse class="body-fill" cx="40" cy="234" rx="8" ry="3"/>
+    <ellipse class="body-fill" cx="70" cy="234" rx="8" ry="3"/>
+
+    <!-- subtle label -->
+    <text class="figure-label" x="55" y="252" text-anchor="middle">front</text>
+
+    <!-- region indicators (rendered on top so JS recoloring is visible) -->
+    <circle class="region" data-region="glabella"  cx="55" cy="20" r="3"/>
+    <circle class="region" data-region="nasal"     cx="55" cy="29" r="3"/>
+    <circle class="region" data-region="oral"      cx="55" cy="38" r="3"/>
+    <circle class="region" data-region="axillary"  cx="36" cy="55" r="4.5"/>
+    <circle class="region" data-region="forearm"   cx="26" cy="92" r="4.5"/>
+    <circle class="region" data-region="umbilicus" cx="55" cy="90" r="3.5"/>
+    <circle class="region" data-region="toe_web"   cx="40" cy="232" r="3.5"/>
+  </g>
+
+  <!-- ============== BACK FIGURE ============== -->
+  <g class="figure" data-view="back" transform="translate(110,0)">
+    <!-- head -->
+    <circle class="body-fill" cx="55" cy="28" r="16"/>
+    <!-- neck -->
+    <rect class="body-fill" x="51" y="42" width="8" height="6"/>
+    <!-- torso (back) -->
+    <path class="body-fill" d="M 36 48 Q 55 45 74 48 L 70 116 Q 55 120 40 116 Z"/>
+    <!-- arms -->
+    <path class="body-fill" d="M 36 50 L 22 105 Q 22 116 30 116 L 36 106 Q 40 80 42 54 Z"/>
+    <path class="body-fill" d="M 74 50 L 88 105 Q 88 116 80 116 L 74 106 Q 70 80 68 54 Z"/>
+    <!-- legs -->
+    <path class="body-fill" d="M 40 116 L 35 218 Q 35 232 44 232 L 53 218 Q 54 165 53 116 Z"/>
+    <path class="body-fill" d="M 70 116 L 75 218 Q 75 232 66 232 L 57 218 Q 56 165 57 116 Z"/>
+    <!-- feet -->
+    <ellipse class="body-fill" cx="40" cy="234" rx="8" ry="3"/>
+    <ellipse class="body-fill" cx="70" cy="234" rx="8" ry="3"/>
+
+    <text class="figure-label" x="55" y="252" text-anchor="middle">back</text>
+
+    <!-- region indicators -->
+    <circle class="region" data-region="occiput"        cx="55" cy="22" r="4"/>
+    <circle class="region" data-region="post_auricular" cx="42" cy="32" r="3"/>
+    <circle class="region" data-region="gluteal"        cx="55" cy="125" r="5"/>
+  </g>
+</svg>
