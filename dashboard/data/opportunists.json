@@ -1,0 +1,87 @@
+{
+  "_doc": "Curated opportunist / concern list. Match is exact on species name. Drilldown badges fire only when one of these names appears in the top_taxa_up list (i.e., the species *increased* vs. baseline). Decreases of opportunists are not flagged. List is conservative; absence here means 'not on our list,' not 'safe.'",
+  "Staphylococcus aureus": {
+    "note": "Associated with skin and soft tissue infections; nasal carriage is a known risk factor for surgical-site infection.",
+    "ref": "WHO bacterial priority pathogens list, 2024"
+  },
+  "Streptococcus mutans": {
+    "note": "Primary etiologic agent of dental caries.",
+    "ref": "Loesche, Microbiol Rev 1986"
+  },
+  "Porphyromonas gingivalis": {
+    "note": "Keystone pathogen in chronic periodontitis.",
+    "ref": "Hajishengallis et al., Cell Host Microbe 2011"
+  },
+  "Tannerella forsythia": {
+    "note": "Periodontitis; member of the 'red complex' periodontopathogens.",
+    "ref": "Socransky et al., J Clin Periodontol 1998"
+  },
+  "Aggregatibacter actinomycetemcomitans": {
+    "note": "Aggressive periodontitis; rare endocarditis.",
+    "ref": "Henderson et al., Clin Microbiol Rev 2010"
+  },
+  "Fusobacterium nucleatum": {
+    "note": "Periodontal pathogen; emerging association with colorectal carcinoma.",
+    "ref": "Han, Curr Opin Microbiol 2015"
+  },
+  "Moraxella catarrhalis": {
+    "note": "Common cause of otitis media and sinusitis; respiratory-tract opportunist.",
+    "ref": "Murphy & Parameswaran, Clin Infect Dis 2009"
+  },
+  "Streptococcus pneumoniae": {
+    "note": "Pneumonia, otitis media, meningitis; respiratory pathogen with carrier states.",
+    "ref": "Bogaert et al., Lancet Infect Dis 2004"
+  },
+  "Haemophilus influenzae": {
+    "note": "Respiratory and invasive disease; non-typeable strains common in adult colonization.",
+    "ref": "Murphy, Clin Infect Dis 2003"
+  },
+  "Pseudomonas aeruginosa": {
+    "note": "Opportunistic respiratory, wound, and bloodstream pathogen; frequent in immunocompromised hosts.",
+    "ref": "WHO bacterial priority pathogens list, 2024"
+  },
+  "Klebsiella pneumoniae": {
+    "note": "Opportunistic respiratory and bloodstream pathogen; CRKP strains on WHO critical list.",
+    "ref": "WHO bacterial priority pathogens list, 2024"
+  },
+  "Acinetobacter baumannii": {
+    "note": "Healthcare-associated infections; on WHO critical priority list.",
+    "ref": "WHO bacterial priority pathogens list, 2024"
+  },
+  "Enterococcus faecalis": {
+    "note": "Frequent cause of UTI, endocarditis, and bacteremia in healthcare settings.",
+    "ref": "Kau et al., Cell Host Microbe 2008"
+  },
+  "Enterococcus faecium": {
+    "note": "Vancomycin-resistant strains are a major nosocomial concern.",
+    "ref": "WHO bacterial priority pathogens list, 2024"
+  },
+  "Clostridioides difficile": {
+    "note": "Causative agent of antibiotic-associated colitis.",
+    "ref": "Kelly & LaMont, NEJM 2008"
+  },
+  "Corynebacterium kroppenstedtii": {
+    "note": "Associated with granulomatous lobular mastitis and skin lipophilic dysbiosis.",
+    "ref": "Riegel et al., Diagn Microbiol Infect Dis 2014"
+  },
+  "Corynebacterium jeikeium": {
+    "note": "Bacteremia and line infections, particularly in immunocompromised hosts.",
+    "ref": "Funke et al., Clin Microbiol Rev 1997"
+  },
+  "Candida albicans": {
+    "note": "Most common cause of mucosal and invasive candidiasis.",
+    "ref": "Pappas et al., Clin Infect Dis 2016"
+  },
+  "Malassezia furfur": {
+    "note": "Seborrheic dermatitis, pityriasis versicolor; bloodstream infection in lipid-fed neonates.",
+    "ref": "Gaitanis et al., Clin Microbiol Rev 2012"
+  },
+  "Trichophyton rubrum": {
+    "note": "Most common cause of athlete's foot (tinea pedis) and onychomycosis.",
+    "ref": "Havlickova et al., Mycoses 2008"
+  },
+  "Cutibacterium acnes": {
+    "note": "Normally commensal; pathogenic in acne and rare device-associated infections.",
+    "ref": "Achermann et al., Clin Microbiol Rev 2014"
+  }
+}

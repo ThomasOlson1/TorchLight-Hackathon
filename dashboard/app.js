@@ -14,6 +14,7 @@
 const DATA_DIR = "./data";
 const MICROBIOME_URL = `${DATA_DIR}/fixture-microbiome.json`;
 const CBC_URL = `${DATA_DIR}/fixture-cbc.json`;
+const OPPORTUNISTS_URL = `${DATA_DIR}/opportunists.json`;
 const BODY_SVG_URL = "./body.svg";
 
 // Color stops mirror the --score-* CSS custom properties in styles.css.
@@ -33,6 +34,7 @@ const IN_FLIGHT_TICK = "Flight (no CBC)";
 const state = {
   microbiome: null,
   cbc: null,
+  opportunists: null,  // { speciesName: { note, ref } }
   timepointIdx: 0,
   selectedCrew: null,
 };
@@ -42,13 +44,22 @@ const state = {
 // =============================================================
 
 async function loadAll() {
-  const [microbiome, cbc, bodyText] = await Promise.all([
+  const [microbiome, cbc, opportunists, bodyText] = await Promise.all([
     fetch(MICROBIOME_URL).then(r => r.json()),
     fetch(CBC_URL).then(r => r.json()),
+    fetch(OPPORTUNISTS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BODY_SVG_URL).then(r => r.text()),
   ]);
   const bodyDoc = new DOMParser().parseFromString(bodyText, "image/svg+xml").documentElement;
-  return { microbiome, cbc, bodyDoc };
+  return { microbiome, cbc, opportunists, bodyDoc };
+}
+
+// Returns { note, ref } if the species is on the curated opportunist list, else null.
+function concernFor(taxonName) {
+  if (!state.opportunists) return null;
+  const entry = state.opportunists[taxonName];
+  if (!entry || !entry.note) return null;
+  return entry;
 }
 
 // =============================================================
@@ -208,9 +219,23 @@ function refreshDrilldown() {
     return;
   }
 
-  const renderList = (items, klass) => items.length === 0
-    ? `<li class="muted">none</li>`
-    : items.map(t => `<li><span>${escapeHtml(t.name)}</span><span class="delta ${klass}">${t.delta >= 0 ? "+" : ""}${t.delta.toFixed(2)}</span></li>`).join("");
+  const renderList = (items, klass) => {
+    if (items.length === 0) return `<li class="muted">none</li>`;
+    return items.map(t => {
+      // Concern badge fires only on the "up" list — a *decrease* of an opportunist is not concerning.
+      const concern = klass === "up" ? concernFor(t.name) : null;
+      const badge = concern
+        ? ` <span class="concern-badge" title="${escapeHtml(concern.note)} — ${escapeHtml(concern.ref)}">⚠ opportunist</span>`
+        : "";
+      return `<li><span class="taxon">${escapeHtml(t.name)}${badge}</span><span class="delta ${klass}">${t.delta >= 0 ? "+" : ""}${t.delta.toFixed(2)}</span></li>`;
+    }).join("");
+  };
+
+  // Detect if any concern badges will render; show an explainer only when relevant.
+  const hasConcernUp = (drill.top_taxa_up || []).some(t => concernFor(t.name));
+  const concernHint = hasConcernUp
+    ? `<p class="concern-hint">⚠ marks species on a curated list of literature-flagged opportunists. The badge means "worth noticing in the drilldown," not "diagnosis." Hover for the citation.</p>`
+    : "";
 
   content.innerHTML = `
     <div id="drilldown-tables">
@@ -223,6 +248,7 @@ function refreshDrilldown() {
         <ol>${renderList(drill.top_taxa_down || [], "down")}</ol>
       </div>
     </div>
+    ${concernHint}
     <p class="caveat">With only ${cell.n_baseline} baseline samples, these rankings are noisy. Treat them as descriptive, not diagnostic.</p>
   `;
 }
@@ -423,9 +449,10 @@ function wireEvents() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const { microbiome, cbc, bodyDoc } = await loadAll();
+    const { microbiome, cbc, opportunists, bodyDoc } = await loadAll();
     state.microbiome = microbiome;
     state.cbc = cbc;
+    state.opportunists = opportunists;
 
     mountAvatars(bodyDoc);
     wireEvents();
