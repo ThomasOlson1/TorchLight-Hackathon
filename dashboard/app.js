@@ -15,6 +15,7 @@ const DATA_DIR = "./data";
 const MICROBIOME_URL = `${DATA_DIR}/fixture-microbiome.json`;
 const CBC_URL = `${DATA_DIR}/fixture-cbc.json`;
 const OPPORTUNISTS_URL = `${DATA_DIR}/opportunists.json`;
+const BENEFICIALS_URL = `${DATA_DIR}/beneficials.json`;
 const BODY_SVG_URL = "./body.svg";
 
 // Color stops mirror the --score-* CSS custom properties in styles.css.
@@ -35,6 +36,7 @@ const state = {
   microbiome: null,
   cbc: null,
   opportunists: null,  // { speciesName: { note, ref } }
+  beneficials: null,   // { speciesName: { note, ref } }
   timepointIdx: 0,
   selectedCrew: null,
 };
@@ -44,20 +46,29 @@ const state = {
 // =============================================================
 
 async function loadAll() {
-  const [microbiome, cbc, opportunists, bodyText] = await Promise.all([
+  const [microbiome, cbc, opportunists, beneficials, bodyText] = await Promise.all([
     fetch(MICROBIOME_URL).then(r => r.json()),
     fetch(CBC_URL).then(r => r.json()),
     fetch(OPPORTUNISTS_URL).then(r => r.json()).catch(() => ({})),
+    fetch(BENEFICIALS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BODY_SVG_URL).then(r => r.text()),
   ]);
   const bodyDoc = new DOMParser().parseFromString(bodyText, "image/svg+xml").documentElement;
-  return { microbiome, cbc, opportunists, bodyDoc };
+  return { microbiome, cbc, opportunists, beneficials, bodyDoc };
 }
 
 // Returns { note, ref } if the species is on the curated opportunist list, else null.
 function concernFor(taxonName) {
   if (!state.opportunists) return null;
   const entry = state.opportunists[taxonName];
+  if (!entry || !entry.note) return null;
+  return entry;
+}
+
+// Returns { note, ref } if the species is on the curated beneficial list, else null.
+function beneficialFor(taxonName) {
+  if (!state.beneficials) return null;
+  const entry = state.beneficials[taxonName];
   if (!entry || !entry.note) return null;
   return entry;
 }
@@ -219,22 +230,42 @@ function refreshDrilldown() {
     return;
   }
 
+  // Decide which annotation badge (if any) fires for a given taxon in a given list direction.
+  // Returns { kind: "caution"|"favorable", icon, label, note, ref } or null.
+  function annotationFor(name, klass) {
+    const opp = concernFor(name);
+    const ben = beneficialFor(name);
+    if (klass === "up") {
+      if (opp) return { kind: "caution",   icon: "⚠", label: "opportunist increased",   ...opp };
+      if (ben) return { kind: "favorable", icon: "✓", label: "beneficial increased",    ...ben };
+    } else {  // "down"
+      if (opp) return { kind: "favorable", icon: "✓", label: "opportunist decreased",   ...opp };
+      if (ben) return { kind: "caution",   icon: "⚠", label: "beneficial decreased",    ...ben };
+    }
+    return null;
+  }
+
   const renderList = (items, klass) => {
     if (items.length === 0) return `<li class="muted">none</li>`;
     return items.map(t => {
-      // Concern badge fires only on the "up" list — a *decrease* of an opportunist is not concerning.
-      const concern = klass === "up" ? concernFor(t.name) : null;
-      const badge = concern
-        ? ` <span class="concern-badge" title="${escapeHtml(concern.note)} — ${escapeHtml(concern.ref)}">⚠ opportunist</span>`
+      const annot = annotationFor(t.name, klass);
+      const badge = annot
+        ? ` <span class="annot-badge ${annot.kind}" title="${escapeHtml(annot.note)} — ${escapeHtml(annot.ref)}">${annot.icon} ${escapeHtml(annot.label)}</span>`
         : "";
       return `<li><span class="taxon">${escapeHtml(t.name)}${badge}</span><span class="delta ${klass}">${t.delta >= 0 ? "+" : ""}${t.delta.toFixed(2)}</span></li>`;
     }).join("");
   };
 
-  // Detect if any concern badges will render; show an explainer only when relevant.
-  const hasConcernUp = (drill.top_taxa_up || []).some(t => concernFor(t.name));
-  const concernHint = hasConcernUp
-    ? `<p class="concern-hint">⚠ marks species on a curated list of literature-flagged opportunists. The badge means "worth noticing in the drilldown," not "diagnosis." Hover for the citation.</p>`
+  const anyAnnot =
+    (drill.top_taxa_up   || []).some(t => annotationFor(t.name, "up"))   ||
+    (drill.top_taxa_down || []).some(t => annotationFor(t.name, "down"));
+  const concernHint = anyAnnot
+    ? `<p class="concern-hint">
+         <strong>⚠</strong> may matter (opportunist rising or beneficial falling) ·
+         <strong>✓</strong> may be favorable (beneficial rising or opportunist falling).
+         Lists are curated from microbiome literature; absence of a badge isn't a clean bill of health.
+         Hover any badge for the citation.
+       </p>`
     : "";
 
   content.innerHTML = `
@@ -449,10 +480,11 @@ function wireEvents() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const { microbiome, cbc, opportunists, bodyDoc } = await loadAll();
+    const { microbiome, cbc, opportunists, beneficials, bodyDoc } = await loadAll();
     state.microbiome = microbiome;
     state.cbc = cbc;
     state.opportunists = opportunists;
+    state.beneficials = beneficials;
 
     mountAvatars(bodyDoc);
     wireEvents();

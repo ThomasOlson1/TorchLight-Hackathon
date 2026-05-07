@@ -79,9 +79,5 @@
   "Trichophyton rubrum": {
     "note": "Most common cause of athlete's foot (tinea pedis) and onychomycosis.",
     "ref": "Havlickova et al., Mycoses 2008"
-  },
-  "Cutibacterium acnes": {
-    "note": "Normally commensal; pathogenic in acne and rare device-associated infections.",
-    "ref": "Achermann et al., Clin Microbiol Rev 2014"
   }
 }

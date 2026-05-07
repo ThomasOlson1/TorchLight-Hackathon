@@ -1,0 +1,67 @@
+{
+  "_doc": "Curated beneficial / protective species list. Match is exact on species name. Drilldown badges fire on BOTH the increased-list (rising beneficial = favorable) AND the decreased-list (falling beneficial = caution). Conservative; absence here means 'not on our list,' not 'neutral.'",
+  "Streptococcus salivarius": {
+    "note": "Oral commensal; certain strains (e.g., K12) reduce upper respiratory infection rates in clinical trials.",
+    "ref": "Wescombe et al., Future Microbiol 2012"
+  },
+  "Lactobacillus salivarius": {
+    "note": "Oral and gut commensal; documented probiotic and immunomodulatory effects.",
+    "ref": "Messaoudi et al., Microb Cell Fact 2013"
+  },
+  "Lactobacillus crispatus": {
+    "note": "Mucosal commensal associated with low pH and exclusion of pathogens.",
+    "ref": "Petrova et al., Front Physiol 2015"
+  },
+  "Lactobacillus rhamnosus": {
+    "note": "Common probiotic strain with documented immunomodulatory and barrier-supporting effects.",
+    "ref": "Sanders et al., Nat Rev Gastroenterol Hepatol 2019"
+  },
+  "Dolosigranulum pigrum": {
+    "note": "Nasal commensal; abundance inversely associated with respiratory infection in cohort studies.",
+    "ref": "Biesbroek et al., Am J Respir Crit Care Med 2014"
+  },
+  "Corynebacterium accolens": {
+    "note": "Nasal commensal; produces free fatty acids that suppress S. pneumoniae growth in culture.",
+    "ref": "Bomar et al., mBio 2016"
+  },
+  "Staphylococcus epidermidis": {
+    "note": "Skin commensal; produces antimicrobial peptides active against S. aureus and supports barrier function.",
+    "ref": "Cogen et al., J Invest Dermatol 2010"
+  },
+  "Staphylococcus hominis": {
+    "note": "Skin commensal; certain strains produce lantibiotics that inhibit S. aureus.",
+    "ref": "Nakatsuji et al., Sci Transl Med 2017"
+  },
+  "Roseomonas mucosa": {
+    "note": "Skin commensal; topical application improved atopic dermatitis in early trials.",
+    "ref": "Myles et al., JCI Insight 2018"
+  },
+  "Cutibacterium acnes": {
+    "note": "Predominant skin commensal in sebaceous areas; helps maintain low skin pH and crowds out transient pathogens.",
+    "ref": "Christensen & Bruggemann, Benef Microbes 2014"
+  },
+  "Bifidobacterium longum": {
+    "note": "Gut commensal; immunomodulatory and frequent probiotic constituent.",
+    "ref": "Sanders et al., Nat Rev Gastroenterol Hepatol 2019"
+  },
+  "Bifidobacterium breve": {
+    "note": "Gut commensal; supports mucosal barrier and immune development.",
+    "ref": "Sanders et al., Nat Rev Gastroenterol Hepatol 2019"
+  },
+  "Akkermansia muciniphila": {
+    "note": "Mucin-degrading gut commensal; lower abundance associated with metabolic disease.",
+    "ref": "Cani et al., Nat Rev Gastroenterol Hepatol 2022"
+  },
+  "Faecalibacterium prausnitzii": {
+    "note": "Major butyrate-producing gut commensal; reduced abundance associated with IBD.",
+    "ref": "Sokol et al., PNAS 2008"
+  },
+  "Bacteroides fragilis": {
+    "note": "Gut commensal; capsular polysaccharide A drives regulatory T-cell development in mouse models.",
+    "ref": "Mazmanian et al., Cell 2005"
+  },
+  "Roseburia intestinalis": {
+    "note": "Butyrate producer in the gut; associated with anti-inflammatory effects.",
+    "ref": "Tamanai-Shacoori et al., Future Microbiol 2017"
+  }
+}

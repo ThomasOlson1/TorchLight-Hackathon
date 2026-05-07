@@ -407,29 +407,42 @@ section.panel .panel-subtitle {
 
 #drilldown-tables li .taxon { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
-.concern-badge {
+.annot-badge {
   display: inline-block;
   padding: 1px 6px;
   font-size: 11px;
   font-weight: 600;
-  background: #ffe4d3;
-  color: #8a3a0c;
-  border: 1px solid #f5b893;
   border-radius: 999px;
   letter-spacing: 0.02em;
   white-space: nowrap;
   cursor: help;
+  border: 1px solid;
+}
+
+.annot-badge.caution {
+  background: #ffe4d3;
+  color: #8a3a0c;
+  border-color: #f5b893;
+}
+
+.annot-badge.favorable {
+  background: #dff5e0;
+  color: #1f6131;
+  border-color: #a8d9b0;
 }
 
 .concern-hint {
   margin: 10px 0 0;
   padding: 8px 12px;
-  background: #fff8ef;
-  border: 1px solid #f5d4ae;
+  background: #f6f8fb;
+  border: 1px solid #d6dde6;
   border-radius: var(--radius-sm);
   font-size: 12px;
-  color: #6b3d10;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
+
+.concern-hint strong { color: var(--text); }
 
 .caveat {
   margin: 14px 0 0;
