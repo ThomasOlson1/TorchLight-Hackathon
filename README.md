@@ -55,4 +55,4 @@ docs/         # design notes, paper claim extractions
 
 ## Team
 
-Thomas Olson + 2 teammates (CS × 2, design × 1; math/stats across all).
+Earl, Thomas, and Mollie (CS × 2, design × 1; math/stats across all).
