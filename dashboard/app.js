@@ -410,8 +410,14 @@ const SYSTEM_STATUS_LABEL = {
   no_data:          "no data",
 };
 
+// "Character select" pattern: a thumbnail row across the top, one large
+// feature panel below showing the currently selected crew. Switching is
+// animated; both keyboard arrows and click work.
+
+let selectedCrewIndex = 0;
+
 function renderCrewSummaries() {
-  const root = document.getElementById("crew-grid");
+  const root = document.getElementById("crew-select");
   if (!root) return;
   root.innerHTML = "";
   const crewSummaries = (state.bloodwork && state.bloodwork.crew_summaries) || [];
@@ -420,73 +426,167 @@ function renderCrewSummaries() {
     return;
   }
 
-  for (const c of crewSummaries) {
-    const card = document.createElement("details");
-    card.className = `crew-card status-${c.overall_status || "no_data"}`;
-    card.dataset.crew = c.crew_id;
+  // ---- Thumbnail row -----------------------------------------------------
+  const thumbRow = document.createElement("nav");
+  thumbRow.className = "crew-thumb-row";
+  thumbRow.setAttribute("role", "tablist");
+  thumbRow.setAttribute("aria-label", "Select crew member");
 
+  for (let i = 0; i < crewSummaries.length; i++) {
+    const c = crewSummaries[i];
     const statusIcon = CREW_STATUS_ICON[c.overall_status] || "·";
-    const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status;
+    const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status || "";
 
-    // Closed state: crew identifier, overall status, and 4 system rows with status icons.
-    const systemRows = (c.systems || []).map(sys => `
-      <li class="crew-system-row sys-${sys.current_status} concern-${sys.concern_level}">
-        <span class="sys-status-icon" aria-hidden="true">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
-        <span class="sys-label">${escapeHtml(sys.label)}</span>
-        <span class="sys-status-text">${escapeHtml(SYSTEM_STATUS_LABEL[sys.current_status] || "")}</span>
-      </li>
+    // Mini status dots, one per system, color-coded by current_status.
+    const systemDots = (c.systems || []).map(sys => `
+      <span class="thumb-sys sys-${sys.current_status} concern-${sys.concern_level}"
+            title="${escapeHtml(sys.label)}: ${escapeHtml(SYSTEM_STATUS_LABEL[sys.current_status] || "")}"></span>
     `).join("");
 
-    const summaryHtml = `
-      <summary>
-        <div class="crew-card-headline">
-          <span class="crew-id">${escapeHtml(c.crew_id)}</span>
-          <span class="crew-overall-icon" aria-hidden="true">${statusIcon}</span>
-          <span class="crew-overall-label">${escapeHtml(overallLabel)}</span>
-        </div>
-        <p class="crew-overall-text">${escapeHtml(c.overall_text)}</p>
-        <ul class="crew-system-list">${systemRows}</ul>
-      </summary>
+    const thumb = document.createElement("button");
+    thumb.type = "button";
+    thumb.className = `crew-thumb status-${c.overall_status || "no_data"}`;
+    thumb.dataset.crew = c.crew_id;
+    thumb.dataset.index = String(i);
+    thumb.setAttribute("role", "tab");
+    thumb.setAttribute("aria-selected", i === selectedCrewIndex ? "true" : "false");
+    thumb.innerHTML = `
+      <span class="thumb-frame">
+        <span class="thumb-corner tc-tl"></span>
+        <span class="thumb-corner tc-tr"></span>
+        <span class="thumb-corner tc-bl"></span>
+        <span class="thumb-corner tc-br"></span>
+      </span>
+      <span class="thumb-id">${escapeHtml(c.crew_id)}</span>
+      <span class="thumb-status">
+        <span class="thumb-icon" aria-hidden="true">${statusIcon}</span>
+        <span class="thumb-label">${escapeHtml(overallLabel)}</span>
+      </span>
+      <span class="thumb-systems" aria-hidden="true">${systemDots}</span>
+      <span class="thumb-ready">${i === selectedCrewIndex ? "READY" : "SELECT"}</span>
     `;
-
-    // Expanded state: per-system per-checkpoint detail.
-    let bodyHtml = `<div class="crew-card-detail">`;
-    for (const sys of (c.systems || [])) {
-      bodyHtml += `
-        <section class="crew-system-detail">
-          <header>
-            <span class="sys-status-icon" aria-hidden="true">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
-            <h4>${escapeHtml(sys.label)}</h4>
-            <span class="concern-pill concern-${sys.concern_level}" title="${escapeHtml(sys.clinical_context || "")}">${escapeHtml(({expected:"expected",watch:"worth watching",follow_up:"follow-up advised"})[sys.concern_level] || sys.concern_level)}</span>
-          </header>
-          <p class="current-line">${escapeHtml(sys.current_text)}</p>
-          ${sys.clinical_context ? `<p class="clinical-context-inline">${escapeHtml(sys.clinical_context)}</p>` : ""}
-          <table class="crew-system-checkpoints">
-            <thead><tr><th>Timepoint</th><th>Direction</th><th>Headline % vs baseline</th></tr></thead>
-            <tbody>
-              ${(sys.checkpoints || []).map(cp => {
-                const pct = cp.headline_pct;
-                const dirClass = pct == null ? "muted" : (pct > 3 ? "up" : (pct < -3 ? "down" : "stable"));
-                const sign = pct == null ? "" : (pct > 0 ? "+" : "");
-                return `
-                  <tr>
-                    <td class="cp-cell-name">${escapeHtml(cp.checkpoint)}</td>
-                    <td class="cp-cell-status">${escapeHtml(cp.status)}</td>
-                    <td class="cp-cell-pct pct-${dirClass}">${pct == null ? "—" : sign + pct + "%"}</td>
-                  </tr>
-                `;
-              }).join("")}
-            </tbody>
-          </table>
-        </section>
-      `;
-    }
-    bodyHtml += `<p class="crew-card-meta muted">Compared against ${escapeHtml(c.crew_id)}'s own pre-flight baseline (mean of L-92, L-44, L-3). All four bloodwork panels (CBC, CMP, immune cytokines, cardiovascular markers).</p>`;
-    bodyHtml += `</div>`;
-
-    card.innerHTML = summaryHtml + bodyHtml;
-    root.appendChild(card);
+    thumb.addEventListener("click", () => selectCrewByIndex(i));
+    thumb.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        selectCrewByIndex((selectedCrewIndex + 1) % crewSummaries.length);
+        focusActiveThumb();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        selectCrewByIndex((selectedCrewIndex - 1 + crewSummaries.length) % crewSummaries.length);
+        focusActiveThumb();
+      }
+    });
+    thumbRow.appendChild(thumb);
   }
+  root.appendChild(thumbRow);
+
+  // ---- Featured panel ----------------------------------------------------
+  const feature = document.createElement("div");
+  feature.className = "crew-feature";
+  feature.setAttribute("role", "tabpanel");
+  root.appendChild(feature);
+
+  renderFeatured(feature, crewSummaries[selectedCrewIndex]);
+}
+
+function selectCrewByIndex(i) {
+  const crewSummaries = (state.bloodwork && state.bloodwork.crew_summaries) || [];
+  if (!crewSummaries.length || i === selectedCrewIndex) return;
+  const root = document.getElementById("crew-select");
+  if (!root) return;
+
+  const oldIdx = selectedCrewIndex;
+  selectedCrewIndex = i;
+
+  // Update tab states + READY/SELECT labels
+  root.querySelectorAll(".crew-thumb").forEach((btn, j) => {
+    btn.setAttribute("aria-selected", j === i ? "true" : "false");
+    const ready = btn.querySelector(".thumb-ready");
+    if (ready) ready.textContent = j === i ? "READY" : "SELECT";
+  });
+
+  // Animate the featured panel: slide-out in the direction of nav, then in
+  const feature = root.querySelector(".crew-feature");
+  if (!feature) return;
+  const dir = (i > oldIdx) ? "left" : "right";
+  feature.classList.remove("slide-in-left", "slide-in-right");
+  feature.classList.add(`slide-out-${dir}`);
+  feature.addEventListener("animationend", function onOut() {
+    feature.removeEventListener("animationend", onOut);
+    feature.classList.remove(`slide-out-${dir}`);
+    renderFeatured(feature, crewSummaries[i]);
+    feature.classList.add(`slide-in-${dir === "left" ? "right" : "left"}`);
+  }, { once: true });
+
+  // Also drive the rest of the page's "selected crew" plumbing.
+  const cs = crewSummaries[i];
+  if (cs && cs.crew_id) selectCrew(cs.crew_id);
+}
+
+function focusActiveThumb() {
+  const root = document.getElementById("crew-select");
+  if (!root) return;
+  const active = root.querySelector(`.crew-thumb[aria-selected="true"]`);
+  if (active && document.activeElement !== active) active.focus();
+}
+
+function renderFeatured(feature, c) {
+  if (!feature || !c) return;
+  feature.dataset.crew = c.crew_id;
+  feature.className = `crew-feature status-${c.overall_status || "no_data"}`;
+
+  const statusIcon = CREW_STATUS_ICON[c.overall_status] || "·";
+  const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status || "";
+
+  let html = `
+    <header class="feature-header">
+      <div class="feature-id-block">
+        <span class="feature-id-label">CREW</span>
+        <span class="feature-id">${escapeHtml(c.crew_id)}</span>
+      </div>
+      <div class="feature-status-block">
+        <span class="feature-status-icon" aria-hidden="true">${statusIcon}</span>
+        <span class="feature-status-label">${escapeHtml(overallLabel)}</span>
+      </div>
+    </header>
+    <p class="feature-overall">${escapeHtml(c.overall_text)}</p>
+    <div class="feature-systems">
+  `;
+  for (const sys of (c.systems || [])) {
+    const concernLabel = ({expected:"expected", watch:"worth watching", follow_up:"follow-up advised"})[sys.concern_level] || sys.concern_level;
+    html += `
+      <section class="feature-system sys-${sys.current_status} concern-${sys.concern_level}">
+        <header>
+          <span class="sys-status-icon" aria-hidden="true">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
+          <h4>${escapeHtml(sys.label)}</h4>
+          <span class="concern-pill concern-${sys.concern_level}" title="${escapeHtml(sys.clinical_context || "")}">${escapeHtml(concernLabel)}</span>
+        </header>
+        <p class="current-line">${escapeHtml(sys.current_text)}</p>
+        ${sys.clinical_context ? `<p class="clinical-context-inline">${escapeHtml(sys.clinical_context)}</p>` : ""}
+        <table class="crew-system-checkpoints">
+          <thead><tr><th>Timepoint</th><th>Direction</th><th>Headline % vs baseline</th></tr></thead>
+          <tbody>
+            ${(sys.checkpoints || []).map(cp => {
+              const pct = cp.headline_pct;
+              const dirClass = pct == null ? "muted" : (pct > 3 ? "up" : (pct < -3 ? "down" : "stable"));
+              const sign = pct == null ? "" : (pct > 0 ? "+" : "");
+              return `
+                <tr>
+                  <td class="cp-cell-name">${escapeHtml(cp.checkpoint)}</td>
+                  <td class="cp-cell-status">${escapeHtml(cp.status)}</td>
+                  <td class="cp-cell-pct pct-${dirClass}">${pct == null ? "—" : sign + pct + "%"}</td>
+                </tr>
+              `;
+            }).join("")}
+          </tbody>
+        </table>
+      </section>
+    `;
+  }
+  html += `</div>`;
+  html += `<p class="feature-meta">Compared against ${escapeHtml(c.crew_id)}'s own pre-flight baseline (mean of L-92, L-44, L-3). All four bloodwork panels (CBC, CMP, immune cytokines, cardiovascular markers).</p>`;
+  feature.innerHTML = html;
 }
 
 // =============================================================
