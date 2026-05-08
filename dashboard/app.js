@@ -306,10 +306,6 @@ function selectCrew(crew) {
     grid.classList.add("has-selection");
     figs.forEach(f => f.classList.toggle("selected", f.dataset.crew === crew));
   }
-  // Re-render the raw bloodwork plots so the selected crew comes forward.
-  // (The "View raw bloodwork data" disclosure may not be open; that's fine —
-  // the DOM under it still updates and rendering is cheap for the small panels.)
-  renderRawBloodwork();
 }
 
 // =============================================================
@@ -370,6 +366,7 @@ function renderCrewSummaries() {
   for (const c of crewSummaries) {
     const card = document.createElement("details");
     card.className = `crew-card status-${c.overall_status || "no_data"}`;
+    card.dataset.crew = c.crew_id;
 
     const statusIcon = CREW_STATUS_ICON[c.overall_status] || "·";
     const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status;
@@ -677,149 +674,6 @@ function renderEvidenceTable(evidence) {
 }
 
 // =============================================================
-// Raw bloodwork plots (collapsible "view raw data")
-// =============================================================
-
-function buildBloodworkXY(perCrew, crew) {
-  const cstats = perCrew[crew];
-  if (!cstats) return null;
-  const tps = state.bloodwork.timepoints;
-  const x = [], y = [];
-  for (const t of tps) {
-    x.push(t);
-    y.push(cstats.values[t] !== undefined ? cstats.values[t] : null);
-    if (t === "L-3") {
-      x.push(IN_FLIGHT_TICK);
-      y.push(null);
-    }
-  }
-  return { x, y, baseline: cstats.baseline_mean, baselineHalf: cstats.baseline_ci_half };
-}
-
-function renderPanelPlots(panel, grid, panelKey) {
-  for (const [mk, m] of Object.entries(panel.metrics)) {
-    const card = document.createElement("div");
-    card.className = "cbc-metric";
-    card.innerHTML = `
-      <div class="cbc-metric-title">
-        <span>${escapeHtml(m.label || mk)}</span>
-        <span class="units">${escapeHtml(m.units || "")}</span>
-      </div>
-      <div class="cbc-plot"></div>
-    `;
-    grid.appendChild(card);
-    const plotEl = card.querySelector(".cbc-plot");
-
-    const traces = [];
-    for (const crew of state.bloodwork.crew) {
-      const xy = buildBloodworkXY(m.per_crew, crew);
-      if (!xy) continue;
-      const baseColor = CREW_COLORS[crew] || "#666";
-      const isSelected = state.selectedCrew === null || state.selectedCrew === crew;
-      const opacity = isSelected ? 1.0 : 0.18;
-
-      // Per-crew baseline band (constant, drawn as a thin filled rect via two parallel lines)
-      const baselineLow = xy.baseline - xy.baselineHalf;
-      const baselineHigh = xy.baseline + xy.baselineHalf;
-      traces.push({
-        x: xy.x.concat(xy.x.slice().reverse()),
-        y: xy.x.map(() => baselineHigh).concat(xy.x.map(() => baselineLow).reverse()),
-        fill: "toself",
-        fillcolor: hexToRgba(baseColor, isSelected ? 0.10 : 0.03),
-        line: { color: "rgba(0,0,0,0)" },
-        hoverinfo: "skip",
-        showlegend: false,
-        connectgaps: false,
-      });
-
-      // Main trajectory
-      traces.push({
-        x: xy.x, y: xy.y,
-        mode: "lines+markers",
-        type: "scatter",
-        name: crew,
-        line: { color: baseColor, width: isSelected ? 2.5 : 1.5 },
-        marker: { size: isSelected ? 6 : 4, color: baseColor, opacity },
-        opacity,
-        connectgaps: false,
-        hovertemplate: `<b>${crew}</b><br>%{x}: %{y}<extra></extra>`,
-      });
-    }
-
-    const refLo = m.ref_lo, refHi = m.ref_hi;
-    const layout = {
-      margin: { t: 8, r: 10, b: 32, l: 44 },
-      showlegend: false,
-      xaxis: { tickfont: { size: 10 }, automargin: true },
-      yaxis: { title: { text: m.units || "", font: { size: 10 } }, tickfont: { size: 10 }, automargin: true },
-      shapes: (refLo != null && refHi != null) ? [{
-        type: "rect", xref: "paper", yref: "y",
-        x0: 0, x1: 1, y0: refLo, y1: refHi,
-        fillcolor: "rgba(60, 130, 60, 0.07)",
-        line: { width: 0 },
-        layer: "below",
-      }] : [],
-      hovermode: "x unified",
-    };
-    Plotly.newPlot(plotEl, traces, layout, { displayModeBar: false, responsive: true });
-  }
-}
-
-function renderRawBloodwork() {
-  const root = document.getElementById("cbc-plots");
-  root.innerHTML = "";
-  for (const [panelKey, panel] of Object.entries(state.bloodwork.panels)) {
-    const nMetrics = Object.keys(panel.metrics).length;
-    const isHuge = nMetrics > 20;
-    const section = document.createElement("section");
-    section.className = "raw-panel";
-
-    let header;
-    if (isHuge) {
-      header = document.createElement("details");
-      header.className = "raw-panel-disclosure";
-      header.innerHTML = `
-        <summary>
-          <strong>${escapeHtml(panel.label)}</strong>
-          <span class="muted">${escapeHtml(panel.source)} · ${nMetrics} metrics — click to render plots</span>
-        </summary>
-      `;
-    } else {
-      header = document.createElement("div");
-      header.className = "raw-panel-header";
-      header.innerHTML = `
-        <h3>${escapeHtml(panel.label)} <span class="muted">${escapeHtml(panel.source)}</span></h3>
-      `;
-    }
-    section.appendChild(header);
-
-    const grid = document.createElement("div");
-    grid.className = "raw-plot-grid";
-    if (isHuge) {
-      header.appendChild(grid);
-    } else {
-      section.appendChild(grid);
-    }
-
-    // CRITICAL: attach to DOM BEFORE rendering Plotly, since Plotly.newPlot
-    // resolves the target by document.getElementById and a detached subtree
-    // won't be found.
-    root.appendChild(section);
-
-    if (isHuge) {
-      header.addEventListener("toggle", () => {
-        if (header.open && !grid.dataset.rendered) {
-          renderPanelPlots(panel, grid, panelKey);
-          grid.dataset.rendered = "true";
-        }
-      });
-    } else {
-      renderPanelPlots(panel, grid, panelKey);
-    }
-  }
-}
-
-// =============================================================
 // Event wiring
 // =============================================================
 
@@ -871,8 +725,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     safe("repaintAll",          () => repaintAll());
     safe("renderCrewSummaries",   () => renderCrewSummaries());
     safe("renderSystemSummaries", () => renderSystemSummaries());
-    safe("renderFindings",      () => renderFindings());
-    safe("renderRawBloodwork",  () => renderRawBloodwork());
+    safe("renderFindings",        () => renderFindings());
   } catch (err) {
     console.error("Dashboard fatal load error:", err);
     document.getElementById("findings-list").innerHTML =
@@ -890,7 +743,6 @@ function safe(label, fn) {
       renderCrewSummaries:    "crew-grid",
       renderSystemSummaries:  "summary-grid",
       renderFindings:         "findings-list",
-      renderRawBloodwork:     "cbc-plots",
     };
     const id = anchors[label];
     if (id) {

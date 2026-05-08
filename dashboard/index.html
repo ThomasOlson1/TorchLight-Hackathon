@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Recovery, Honestly — Inspiration 4</title>
   <meta name="description" content="An astronaut-facing dashboard for the SpaceX Inspiration 4 crew: CBC bloodwork trajectories and a body-mapped microbiome view, both wrapped in calibrated uncertainty.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -69,21 +72,6 @@
       </details>
     </section>
 
-    <section class="panel" id="cbc-panel">
-      <details>
-        <summary>
-          <h2 style="display:inline">View raw bloodwork data</h2>
-          <span class="muted" style="margin-left:8px">— per-metric trajectories across all crew members</span>
-        </summary>
-        <p class="panel-subtitle">
-          Per-crew time series for every metric in the four bloodwork panels. Shaded bands are
-          bootstrap CIs anchored on each person's own pre-flight values. The visible gap between
-          <span class="mono">L-3</span> and <span class="mono">R+1</span> is real: no CBC was
-          collected in flight.
-        </p>
-        <div id="cbc-plots" aria-live="polite"></div>
-      </details>
-    </section>
 
     <section class="panel" id="avatar-section">
       <h2>Microbiome — where on the body did things shift?</h2>
@@ -173,7 +161,6 @@
     </p>
   </footer>
 
-  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <script src="app.js" type="module"></script>
 
 </body>
