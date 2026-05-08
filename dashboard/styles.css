@@ -126,7 +126,210 @@ section.panel .panel-subtitle {
   font-size: 14px;
 }
 
-/* ---------- CBC panel ---------- */
+/* ---------- Findings (report-first cards) ---------- */
+
+#findings-list .finding-category {
+  margin: 16px 0 24px;
+}
+
+.finding-category-title {
+  margin: 8px 0 10px;
+  padding-bottom: 4px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.finding-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+.finding-card[open] { box-shadow: var(--shadow); }
+
+.finding-card.status-stable       { border-left-color: #b0b8c2; }
+.finding-card.status-shifted_up   { border-left-color: #d94a1f; }
+.finding-card.status-shifted_down { border-left-color: #2956a8; }
+.finding-card.status-mixed        { border-left-color: #b08000; }
+.finding-card.status-no_data      { border-left-color: #d8d8d8; }
+
+.finding-card > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 15px;
+  user-select: none;
+}
+.finding-card > summary::-webkit-details-marker { display: none; }
+.finding-card > summary::marker { display: none; }
+.finding-card > summary:hover { background: #f7f8fa; }
+
+.finding-icon {
+  font-size: 16px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.finding-card.status-shifted_up   .finding-icon { color: #d94a1f; }
+.finding-card.status-shifted_down .finding-icon { color: #2956a8; }
+.finding-card.status-mixed        .finding-icon { color: #b08000; }
+.finding-card.status-stable       .finding-icon { color: #6b7480; }
+
+.finding-headline {
+  flex: 1;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.finding-disclose {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.finding-card[open] .finding-disclose::after { content: " ↑"; }
+.finding-card:not([open]) .finding-disclose::after { content: " ↓"; }
+
+.finding-body {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: #fbfcfd;
+}
+
+.finding-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.finding-tp {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.finding-tp.tp-shifted_up   { border-left: 3px solid #d94a1f; }
+.finding-tp.tp-shifted_down { border-left: 3px solid #2956a8; }
+.finding-tp.tp-mixed        { border-left: 3px solid #b08000; }
+.finding-tp.tp-stable       { border-left: 3px solid #b0b8c2; }
+
+.finding-tp-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.finding-tp-label {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 13px;
+  background: #eef1f5;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.finding-tp-status {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.finding-tp-crew {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.finding-evidence {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+  font-size: 13px;
+}
+
+.finding-evidence th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.finding-evidence td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #f0f3f6;
+}
+
+.finding-evidence td.num {
+  text-align: right;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+
+.finding-evidence td.num.up    { color: #b3320f; }
+.finding-evidence td.num.down  { color: #2956a8; }
+.finding-evidence td.num.muted { color: var(--text-muted); }
+
+.finding-sources {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.finding-sources strong { color: var(--text); }
+
+.finding-method-note {
+  margin: 6px 0 0;
+  font-size: 11px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---------- Raw bloodwork section ---------- */
+
+.raw-panel {
+  margin: 18px 0;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+.raw-panel:first-child { border-top: 0; padding-top: 0; }
+
+.raw-panel-header h3 {
+  margin: 8px 0 10px;
+  font-size: 16px;
+}
+
+.raw-panel-disclosure > summary {
+  cursor: pointer;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.raw-plot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+#bloodwork-report .muted { color: var(--text-muted); }
+
+/* ---------- CBC panel (legacy class names retained) ---------- */
 
 #cbc-plots {
   display: grid;

@@ -22,15 +22,33 @@
 
   <main>
 
-    <section class="panel" id="cbc-panel">
-      <h2>Bloodwork (CBC) trajectories</h2>
+    <section class="panel" id="bloodwork-report">
+      <h2>What your blood tells us</h2>
       <p class="panel-subtitle">
-        Per crew member, the same panels you'd see at a routine doctor's visit — plotted from <span class="mono">L-92</span>
-        through <span class="mono">R+194</span>. Shaded bands are bootstrap CIs anchored on each person's own pre-flight values.
-        The visible gap between <span class="mono">L-3</span> and <span class="mono">R+1</span> is real:
-        no CBC was collected in flight.
+        Plain-language findings synthesized from <strong>four bloodwork sources</strong>: the
+        Complete Blood Count (OSD-569), Comprehensive Metabolic Panel, immune cytokine panel, and
+        cardiovascular marker panel (all OSD-575). Each card is a per-system summary across
+        the mission — click to expand the underlying metrics, per-crew shifts, and source citations.
       </p>
-      <div id="cbc-plots" aria-live="polite"></div>
+      <div id="findings-list" aria-live="polite">
+        <p class="muted">Loading findings...</p>
+      </div>
+    </section>
+
+    <section class="panel" id="cbc-panel">
+      <details>
+        <summary>
+          <h2 style="display:inline">View raw bloodwork data</h2>
+          <span class="muted" style="margin-left:8px">— per-metric trajectories across all crew members</span>
+        </summary>
+        <p class="panel-subtitle">
+          Per-crew time series for every metric in the four bloodwork panels. Shaded bands are
+          bootstrap CIs anchored on each person's own pre-flight values. The visible gap between
+          <span class="mono">L-3</span> and <span class="mono">R+1</span> is real: no CBC was
+          collected in flight.
+        </p>
+        <div id="cbc-plots" aria-live="polite"></div>
+      </details>
     </section>
 
     <section class="panel" id="avatar-section">

@@ -13,7 +13,7 @@
 
 const DATA_DIR = "./data";
 const MICROBIOME_URL = `${DATA_DIR}/microbiome.json`;
-const CBC_URL = `${DATA_DIR}/cbc.json`;
+const BLOODWORK_URL = `${DATA_DIR}/bloodwork.json`;
 const OPPORTUNISTS_URL = `${DATA_DIR}/opportunists.json`;
 const BENEFICIALS_URL = `${DATA_DIR}/beneficials.json`;
 const BODY_SVG_URL = "./body.svg";
@@ -34,7 +34,7 @@ const IN_FLIGHT_TICK = "Flight (no CBC)";
 
 const state = {
   microbiome: null,
-  cbc: null,
+  bloodwork: null,     // { crew, timepoints, panels, systems, findings }
   opportunists: null,  // { speciesName: { note, ref } }
   beneficials: null,   // { speciesName: { note, ref } }
   timepointIdx: 0,
@@ -46,15 +46,15 @@ const state = {
 // =============================================================
 
 async function loadAll() {
-  const [microbiome, cbc, opportunists, beneficials, bodyText] = await Promise.all([
+  const [microbiome, bloodwork, opportunists, beneficials, bodyText] = await Promise.all([
     fetch(MICROBIOME_URL).then(r => r.json()),
-    fetch(CBC_URL).then(r => r.json()),
+    fetch(BLOODWORK_URL).then(r => r.json()),
     fetch(OPPORTUNISTS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BENEFICIALS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BODY_SVG_URL).then(r => r.text()),
   ]);
   const bodyDoc = new DOMParser().parseFromString(bodyText, "image/svg+xml").documentElement;
-  return { microbiome, cbc, opportunists, beneficials, bodyDoc };
+  return { microbiome, bloodwork, opportunists, beneficials, bodyDoc };
 }
 
 // Returns { note, ref } if the species is on the curated opportunist list, else null.
@@ -306,93 +306,199 @@ function selectCrew(crew) {
     grid.classList.add("has-selection");
     figs.forEach(f => f.classList.toggle("selected", f.dataset.crew === crew));
   }
-  // Re-render CBC traces so selected crew comes forward
-  renderCBC();
+  // Re-render the raw bloodwork plots so the selected crew comes forward.
+  // (The "View raw bloodwork data" disclosure may not be open; that's fine —
+  // the DOM under it still updates and rendering is cheap for the small panels.)
+  renderRawBloodwork();
 }
 
 // =============================================================
 // CBC plots (Plotly)
 // =============================================================
 
-function buildCbcXY(metric, crew) {
-  // Insert a synthetic in-flight x with null y between L-3 and R+1 so the line breaks.
-  const tps = state.cbc.timepoints;
-  const vals = state.cbc.metrics[metric].values[crew] || {};
-  const ci = (state.cbc.metrics[metric].trajectory_ci || {})[crew] || {};
-  const x = [];
-  const y = [];
-  const yLow = [];
-  const yHigh = [];
-  for (let i = 0; i < tps.length; i++) {
-    const t = tps[i];
+function hexToRgba(hex, a) {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r}, ${g}, ${b}, ${a})`;
+}
+
+// =============================================================
+// Findings (report-first cards)
+// =============================================================
+
+const STATUS_ICON = {
+  shifted_up:   "▲",
+  shifted_down: "▼",
+  mixed:        "◆",
+  stable:       "—",
+  no_data:      "·",
+};
+
+const STATUS_LABEL = {
+  shifted_up:   "elevated",
+  shifted_down: "decreased",
+  mixed:        "mixed across crew",
+  stable:       "stable",
+  no_data:      "no data",
+};
+
+function renderFindings() {
+  const root = document.getElementById("findings-list");
+  root.innerHTML = "";
+
+  const byCategory = {};
+  for (const f of state.bloodwork.findings) {
+    if (!byCategory[f.category]) byCategory[f.category] = [];
+    byCategory[f.category].push(f);
+  }
+
+  const categoryOrder = ["Hematology", "Metabolic", "Immune", "Cardiovascular"];
+  for (const cat of categoryOrder) {
+    if (!byCategory[cat]) continue;
+    const section = document.createElement("section");
+    section.className = "finding-category";
+    section.innerHTML = `<h3 class="finding-category-title">${escapeHtml(cat)}</h3>`;
+    byCategory[cat].forEach(f => section.appendChild(renderFindingCard(f)));
+    root.appendChild(section);
+  }
+}
+
+function renderFindingCard(f) {
+  const card = document.createElement("details");
+  card.className = `finding-card status-${f.overall_status}`;
+
+  const summary = document.createElement("summary");
+  summary.innerHTML = `
+    <span class="finding-icon" aria-hidden="true">${STATUS_ICON[f.overall_status] || "·"}</span>
+    <span class="finding-headline">${escapeHtml(f.headline)}</span>
+    <span class="finding-disclose" aria-hidden="true">click for evidence</span>
+  `;
+  card.appendChild(summary);
+
+  const body = document.createElement("div");
+  body.className = "finding-body";
+
+  const postFlightTps = state.bloodwork.timepoints.filter(
+    t => !state.bloodwork.baseline_timepoints.includes(t)
+  );
+
+  let html = '<div class="finding-timeline">';
+  for (const tp of postFlightTps) {
+    const ts = f.per_timepoint && f.per_timepoint[tp];
+    if (!ts || ts.status === "no_data") continue;
+    html += `
+      <div class="finding-tp tp-${ts.status}">
+        <div class="finding-tp-header">
+          <span class="finding-tp-label">${escapeHtml(tp)}</span>
+          <span class="finding-tp-status">${STATUS_ICON[ts.status]} ${STATUS_LABEL[ts.status]}</span>
+          ${ts.n_total ? `<span class="finding-tp-crew">${ts.n_crew_up}↑ &middot; ${ts.n_crew_down}↓ &middot; ${ts.n_crew_stable}— of ${ts.n_total} crew</span>` : ""}
+        </div>
+        ${renderEvidenceTable(ts.evidence || [])}
+      </div>
+    `;
+  }
+  html += '</div>';
+
+  // Sources
+  const sources = new Set();
+  for (const mk of (f.metric_keys || [])) {
+    const panel = state.bloodwork.panels[mk.panel];
+    if (panel) sources.add(`${panel.label} (${panel.source})`);
+  }
+  if (sources.size) {
+    html += `<p class="finding-sources"><strong>Sources:</strong> ${[...sources].map(escapeHtml).join("; ")}</p>`;
+  }
+  html += `<p class="finding-method-note">A metric is "shifted" when its post-flight value falls outside the bootstrap CI of the same crew member's pre-flight mean (n=3 baseline samples). A system is summarized as shifted when at least 50% of metrics shift in the same direction across at least 50% of crew.</p>`;
+
+  body.innerHTML = html;
+  card.appendChild(body);
+  return card;
+}
+
+function renderEvidenceTable(evidence) {
+  if (!evidence.length) return "";
+  // Show only metrics that actually moved or have data; sort by absolute median pct change
+  const sorted = [...evidence].sort((a, b) => Math.abs(b.median_pct_change || 0) - Math.abs(a.median_pct_change || 0));
+  const rows = sorted.slice(0, 12).map(e => {
+    const movement = e.n_crew_shifted_up || e.n_crew_shifted_down
+      ? `${e.n_crew_shifted_up}↑ ${e.n_crew_shifted_down}↓ of ${e.n_crew_observed}`
+      : `<span class="muted">none of ${e.n_crew_observed} shifted</span>`;
+    const pct = e.median_pct_change || 0;
+    const pctClass = pct > 0 ? "up" : (pct < 0 ? "down" : "muted");
+    return `
+      <tr>
+        <td>${escapeHtml(e.label)}</td>
+        <td>${movement}</td>
+        <td class="num ${pctClass}">${pct > 0 ? "+" : ""}${pct}%</td>
+      </tr>
+    `;
+  }).join("");
+  return `
+    <table class="finding-evidence">
+      <thead><tr><th>Metric</th><th>Crew shifted</th><th>Median % vs baseline</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+}
+
+// =============================================================
+// Raw bloodwork plots (collapsible "view raw data")
+// =============================================================
+
+function buildBloodworkXY(perCrew, crew) {
+  const cstats = perCrew[crew];
+  if (!cstats) return null;
+  const tps = state.bloodwork.timepoints;
+  const x = [], y = [];
+  for (const t of tps) {
     x.push(t);
-    y.push(vals[t] != null ? vals[t] : null);
-    if (ci[t]) {
-      yLow.push(ci[t][0]);
-      yHigh.push(ci[t][1]);
-    } else {
-      yLow.push(null);
-      yHigh.push(null);
-    }
+    y.push(cstats.values[t] !== undefined ? cstats.values[t] : null);
     if (t === "L-3") {
       x.push(IN_FLIGHT_TICK);
       y.push(null);
-      yLow.push(null);
-      yHigh.push(null);
     }
   }
-  return { x, y, yLow, yHigh };
+  return { x, y, baseline: cstats.baseline_mean, baselineHalf: cstats.baseline_ci_half };
 }
 
-function renderCBC() {
-  const root = document.getElementById("cbc-plots");
-  root.innerHTML = "";
-  const metricKeys = Object.keys(state.cbc.metrics);
-
-  metricKeys.forEach(metric => {
-    const m = state.cbc.metrics[metric];
-
+function renderPanelPlots(panel, grid, panelKey) {
+  for (const [mk, m] of Object.entries(panel.metrics)) {
+    const plotId = `plot-${panelKey}-${mk}`;
     const card = document.createElement("div");
     card.className = "cbc-metric";
     card.innerHTML = `
       <div class="cbc-metric-title">
-        <span>${escapeHtml(m.label)}</span>
+        <span>${escapeHtml(m.label || mk)}</span>
         <span class="units">${escapeHtml(m.units || "")}</span>
       </div>
-      <div class="cbc-plot" id="plot-${metric}"></div>
+      <div class="cbc-plot" id="${plotId}"></div>
     `;
-    root.appendChild(card);
+    grid.appendChild(card);
 
     const traces = [];
-
-    // Reference range as filled background band
-    if (Array.isArray(m.reference_range)) {
-      const [lo, hi] = m.reference_range;
-      // Two horizontal traces filled between
-      // We'll instead use Plotly shapes via layout for the band.
-    }
-
-    state.cbc.crew.forEach(crew => {
-      const { x, y, yLow, yHigh } = buildCbcXY(metric, crew);
-      const isSelected = state.selectedCrew === null || state.selectedCrew === crew;
+    for (const crew of state.bloodwork.crew) {
+      const xy = buildBloodworkXY(m.per_crew, crew);
+      if (!xy) continue;
       const baseColor = CREW_COLORS[crew] || "#666";
+      const isSelected = state.selectedCrew === null || state.selectedCrew === crew;
       const opacity = isSelected ? 1.0 : 0.18;
 
-      // CI band as a filled trace (yHigh upper, yLow lower)
+      // Per-crew baseline band (constant, drawn as a thin filled rect via two parallel lines)
+      const baselineLow = xy.baseline - xy.baselineHalf;
+      const baselineHigh = xy.baseline + xy.baselineHalf;
       traces.push({
-        x: x.concat(x.slice().reverse()),
-        y: yHigh.concat(yLow.slice().reverse()),
+        x: xy.x.concat(xy.x.slice().reverse()),
+        y: xy.x.map(() => baselineHigh).concat(xy.x.map(() => baselineLow).reverse()),
         fill: "toself",
-        fillcolor: hexToRgba(baseColor, isSelected ? 0.12 : 0.04),
+        fillcolor: hexToRgba(baseColor, isSelected ? 0.10 : 0.03),
         line: { color: "rgba(0,0,0,0)" },
         hoverinfo: "skip",
         showlegend: false,
         connectgaps: false,
-        name: `${crew} CI`,
       });
-      // Main line
+
+      // Main trajectory
       traces.push({
-        x, y,
+        x: xy.x, y: xy.y,
         mode: "lines+markers",
         type: "scatter",
         name: crew,
@@ -402,41 +508,71 @@ function renderCBC() {
         connectgaps: false,
         hovertemplate: `<b>${crew}</b><br>%{x}: %{y}<extra></extra>`,
       });
-    });
+    }
 
-    const refRange = Array.isArray(m.reference_range) ? m.reference_range : null;
+    const refLo = m.ref_lo, refHi = m.ref_hi;
     const layout = {
-      margin: { t: 10, r: 10, b: 36, l: 44 },
+      margin: { t: 8, r: 10, b: 32, l: 44 },
       showlegend: false,
       xaxis: { tickfont: { size: 10 }, automargin: true },
       yaxis: { title: { text: m.units || "", font: { size: 10 } }, tickfont: { size: 10 }, automargin: true },
-      shapes: refRange ? [{
+      shapes: (refLo != null && refHi != null) ? [{
         type: "rect", xref: "paper", yref: "y",
-        x0: 0, x1: 1, y0: refRange[0], y1: refRange[1],
+        x0: 0, x1: 1, y0: refLo, y1: refHi,
         fillcolor: "rgba(60, 130, 60, 0.07)",
         line: { width: 0 },
         layer: "below",
       }] : [],
-      annotations: refRange ? [{
-        xref: "paper", yref: "y",
-        x: 0.99, y: refRange[1],
-        text: `clinical reference: ${refRange[0]}–${refRange[1]} ${m.units || ""}`,
-        showarrow: false, xanchor: "right", yanchor: "bottom",
-        font: { size: 10, color: "#3a6b3a" },
-      }] : [],
       hovermode: "x unified",
     };
-
-    Plotly.newPlot(`plot-${metric}`, traces, layout, {
-      displayModeBar: false,
-      responsive: true,
-    });
-  });
+    Plotly.newPlot(plotId, traces, layout, { displayModeBar: false, responsive: true });
+  }
 }
 
-function hexToRgba(hex, a) {
-  const [r, g, b] = hexToRgb(hex);
-  return `rgba(${r}, ${g}, ${b}, ${a})`;
+function renderRawBloodwork() {
+  const root = document.getElementById("cbc-plots");
+  root.innerHTML = "";
+  for (const [panelKey, panel] of Object.entries(state.bloodwork.panels)) {
+    const nMetrics = Object.keys(panel.metrics).length;
+    const isHuge = nMetrics > 20;
+    const section = document.createElement("section");
+    section.className = "raw-panel";
+
+    let header;
+    if (isHuge) {
+      header = document.createElement("details");
+      header.className = "raw-panel-disclosure";
+      header.innerHTML = `
+        <summary>
+          <strong>${escapeHtml(panel.label)}</strong>
+          <span class="muted">${escapeHtml(panel.source)} · ${nMetrics} metrics — click to render plots</span>
+        </summary>
+      `;
+    } else {
+      header = document.createElement("div");
+      header.className = "raw-panel-header";
+      header.innerHTML = `
+        <h3>${escapeHtml(panel.label)} <span class="muted">${escapeHtml(panel.source)}</span></h3>
+      `;
+    }
+    section.appendChild(header);
+
+    const grid = document.createElement("div");
+    grid.className = "raw-plot-grid";
+    if (isHuge) {
+      header.appendChild(grid);
+      header.addEventListener("toggle", () => {
+        if (header.open && !grid.dataset.rendered) {
+          renderPanelPlots(panel, grid, panelKey);
+          grid.dataset.rendered = "true";
+        }
+      });
+    } else {
+      section.appendChild(grid);
+      renderPanelPlots(panel, grid, panelKey);
+    }
+    root.appendChild(section);
+  }
 }
 
 // =============================================================
@@ -480,19 +616,20 @@ function wireEvents() {
 
 document.addEventListener("DOMContentLoaded", async () => {
   try {
-    const { microbiome, cbc, opportunists, beneficials, bodyDoc } = await loadAll();
+    const { microbiome, bloodwork, opportunists, beneficials, bodyDoc } = await loadAll();
     state.microbiome = microbiome;
-    state.cbc = cbc;
+    state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
 
     mountAvatars(bodyDoc);
     wireEvents();
     repaintAll();
-    renderCBC();
+    renderFindings();
+    renderRawBloodwork();
   } catch (err) {
     console.error("Dashboard failed to load:", err);
-    document.getElementById("cbc-plots").innerHTML =
+    document.getElementById("findings-list").innerHTML =
       `<p style="color: #b00; padding: 12px;">Failed to load data. Check the console.</p>`;
   }
 });
