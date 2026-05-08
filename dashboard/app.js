@@ -134,8 +134,10 @@ class Avatar3D {
     this.crewId = crewId;
     this.dirty = true;
 
-    const w = canvas.clientWidth || 280;
-    const h = canvas.clientHeight || 320;
+    // Bottom-out at 280x336 if layout hasn't settled yet; ResizeObserver
+    // + the deferred handleResize() call below will fix once we have real dims.
+    const w = Math.max(1, canvas.clientWidth  || 280);
+    const h = Math.max(1, canvas.clientHeight || 336);
 
     this.scene = new THREE.Scene();
     this.scene.background = null;
@@ -197,6 +199,11 @@ class Avatar3D {
     // Resize observer to keep the canvas crisp on layout changes.
     const ro = new ResizeObserver(() => this.handleResize());
     ro.observe(canvas);
+
+    // Force a resize+render after the browser has laid the page out, in case
+    // canvas.clientWidth was 0 at construction (common when DOMContentLoaded
+    // fires before the avatar container's aspect-ratio is resolved).
+    requestAnimationFrame(() => requestAnimationFrame(() => this.handleResize()));
 
     this.requestRender();
   }
@@ -376,8 +383,8 @@ class Avatar3D {
   }
 
   handleResize() {
-    const w = this.canvas.clientWidth || 280;
-    const h = this.canvas.clientHeight || 320;
+    const w = Math.max(1, this.canvas.clientWidth  || 280);
+    const h = Math.max(1, this.canvas.clientHeight || 336);
     this.renderer.setSize(w, h, false);
     this.camera.aspect = w / h;
     this.camera.updateProjectionMatrix();
