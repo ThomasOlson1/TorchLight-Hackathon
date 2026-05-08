@@ -36,7 +36,6 @@ const state = {
   bloodwork: null,     // { crew, timepoints, panels, systems, findings }
   opportunists: null,  // { speciesName: { note, ref } }
   beneficials: null,   // { speciesName: { note, ref } }
-  astronautGltf: null, // shared loaded GLTF, cloned per avatar
   timepointIdx: 0,
   selectedCrew: null,
 };
@@ -46,16 +45,13 @@ const state = {
 // =============================================================
 
 async function loadAll() {
-  // Astronaut.glb is loaded in parallel with the JSON. If it fails (e.g.
-  // offline or asset missing) the avatars fall back to 2D SVG bodies.
-  const [microbiome, bloodwork, opportunists, beneficials, gltf] = await Promise.all([
+  const [microbiome, bloodwork, opportunists, beneficials] = await Promise.all([
     fetch(MICROBIOME_URL).then(r => r.json()),
     fetch(BLOODWORK_URL).then(r => r.json()),
     fetch(OPPORTUNISTS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BENEFICIALS_URL).then(r => r.json()).catch(() => ({})),
-    loadAstronaut().catch(err => { console.warn("Astronaut model failed to load:", err); return null; }),
   ]);
-  return { microbiome, bloodwork, opportunists, beneficials, gltf };
+  return { microbiome, bloodwork, opportunists, beneficials };
 }
 
 // Returns { note, ref } if the species is on the curated opportunist list, else null.
@@ -100,273 +96,16 @@ function colorForScore(d, withinBaselineNoise) {
 }
 
 // =============================================================
-// 3D avatars (Three.js, procedural T-pose body, render-on-demand)
+// Avatar registry (one entry per crew, rendered as 2D SVG)
 // =============================================================
 
-import * as THREE from "three";
-import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
-
-const ASTRONAUT_URL = "./assets/Astronaut.glb";
-
-// Load the astronaut model exactly once and let every avatar clone it.
-let _astronautPromise = null;
-function loadAstronaut() {
-  if (!_astronautPromise) {
-    const loader = new GLTFLoader();
-    _astronautPromise = new Promise((resolve, reject) => {
-      loader.load(ASTRONAUT_URL, (gltf) => resolve(gltf), undefined, reject);
-    });
-  }
-  return _astronautPromise;
-}
-
-// Anatomical hotspot positions in the astronaut model's local coordinates.
-// The Astronaut.glb model stands on the y=0 plane, faces +z, scale ~1m tall.
-// Positions found by visual inspection of the rigged model.
-const HOTSPOT_POSITIONS = {
-  // Helmet front (visor area). The model has a glass dome head.
-  glabella:       new THREE.Vector3( 0.00, 1.42,  0.20),
-  nasal:          new THREE.Vector3( 0.00, 1.36,  0.22),
-  oral:           new THREE.Vector3( 0.00, 1.30,  0.22),
-  // Helmet sides / back
-  post_auricular: new THREE.Vector3(-0.18, 1.36, -0.02),
-  occiput:        new THREE.Vector3( 0.00, 1.40, -0.20),
-  // Suit shoulders & arms
-  axillary:       new THREE.Vector3(-0.22, 1.05,  0.00),
-  forearm:        new THREE.Vector3(-0.42, 0.78,  0.05),
-  // Front torso
-  umbilicus:      new THREE.Vector3( 0.00, 0.85,  0.22),
-  // Lower back
-  gluteal:        new THREE.Vector3( 0.00, 0.55, -0.22),
-  // Boot top
-  toe_web:        new THREE.Vector3(-0.10, 0.10,  0.18),
-};
-
-const HOTSPOT_RADIUS = 0.05;
-
-const avatars = new Map();  // crew_id -> Avatar3D instance
-
-class Avatar3D {
-  constructor(canvas, crewId, gltf) {
-    this.canvas = canvas;
-    this.crewId = crewId;
-    this.dirty = true;
-
-    // Bottom-out at 280x336 if layout hasn't settled yet; ResizeObserver
-    // + the deferred handleResize() call below will fix once we have real dims.
-    const w = Math.max(1, canvas.clientWidth  || 280);
-    const h = Math.max(1, canvas.clientHeight || 336);
-
-    this.scene = new THREE.Scene();
-    this.scene.background = null;
-
-    this.camera = new THREE.PerspectiveCamera(34, w / h, 0.05, 50);
-    this.camera.position.set(0, 0.85, 3.0);
-    this.camera.lookAt(0, 0.85, 0);
-
-    // Permissive WebGL options. If context creation throws, the caller
-    // (mountAvatars) will catch it and fall back to a 2D SVG body.
-    this.renderer = new THREE.WebGLRenderer({
-      canvas, alpha: true, antialias: false,
-      failIfMajorPerformanceCaveat: false,
-      preserveDrawingBuffer: false,
-    });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    this.renderer.setSize(w, h, false);
-
-    // Lighting: soft ambient + a key + a fill so the T-pose reads cleanly.
-    this.scene.add(new THREE.AmbientLight(0xfff5e0, 0.55));
-    const key = new THREE.DirectionalLight(0xffffff, 0.85);
-    key.position.set(2.5, 4, 3);
-    this.scene.add(key);
-    const fill = new THREE.DirectionalLight(0xc7d8ff, 0.35);
-    fill.position.set(-2, 1.5, 2);
-    this.scene.add(fill);
-    const back = new THREE.DirectionalLight(0xffe4c2, 0.22);
-    back.position.set(0, 2, -3);
-    this.scene.add(back);
-
-    // Root group so we can rotate the whole body.
-    this.root = new THREE.Group();
-    this.scene.add(this.root);
-
-    // Clone the astronaut model so each crew has an independent transform tree.
-    // Materials are cloned where we'll never modify them so they can be shared.
-    this.body = gltf.scene.clone(true);
-    this.root.add(this.body);
-
-    // Hotspot meshes, one per anatomical site.
-    this.hotspots = new Map();
-    const hotspotGeom = new THREE.SphereGeometry(HOTSPOT_RADIUS, 22, 16);
-    for (const [site, pos] of Object.entries(HOTSPOT_POSITIONS)) {
-      const mat = new THREE.MeshStandardMaterial({
-        color: 0xececec, roughness: 0.35, metalness: 0.0,
-        emissive: 0x000000,
-      });
-      const mesh = new THREE.Mesh(hotspotGeom, mat);
-      mesh.position.copy(pos);
-      mesh.userData.site = site;
-      this.root.add(mesh);
-      this.hotspots.set(site, mesh);
-    }
-
-    // Drag-to-rotate (mouse + touch). Render-on-demand triggered by drag.
-    this.attachControls();
-
-    // Raycaster for hover/click on hotspots.
-    this.raycaster = new THREE.Raycaster();
-    this.pointer = new THREE.Vector2();
-    canvas.addEventListener("mousemove", (e) => this.onPointerMove(e));
-    canvas.addEventListener("mouseleave", () => { canvas.style.cursor = ""; });
-    canvas.addEventListener("click", (e) => this.onClick(e));
-
-    // Resize observer to keep the canvas crisp on layout changes.
-    const ro = new ResizeObserver(() => this.handleResize());
-    ro.observe(canvas);
-
-    // Force a resize+render after the browser has laid the page out, in case
-    // canvas.clientWidth was 0 at construction (common when DOMContentLoaded
-    // fires before the avatar container's aspect-ratio is resolved).
-    requestAnimationFrame(() => requestAnimationFrame(() => this.handleResize()));
-
-    this.requestRender();
-  }
-
-  attachControls() {
-    let dragging = false;
-    let lastX = 0, lastY = 0;
-    const targetRot = { x: 0, y: 0 };
-
-    const onDown = (e) => {
-      dragging = true;
-      const p = e.touches ? e.touches[0] : e;
-      lastX = p.clientX; lastY = p.clientY;
-      this.canvas.style.cursor = "grabbing";
-    };
-    const onMove = (e) => {
-      if (!dragging) return;
-      const p = e.touches ? e.touches[0] : e;
-      const dx = p.clientX - lastX;
-      const dy = p.clientY - lastY;
-      lastX = p.clientX; lastY = p.clientY;
-      targetRot.y += dx * 0.01;
-      targetRot.x = Math.max(-0.6, Math.min(0.6, targetRot.x + dy * 0.005));
-      this.root.rotation.x = targetRot.x;
-      this.root.rotation.y = targetRot.y;
-      this.requestRender();
-    };
-    const onUp = () => {
-      dragging = false;
-      this.canvas.style.cursor = "grab";
-    };
-
-    this.canvas.addEventListener("mousedown",  onDown);
-    window.addEventListener("mousemove",       onMove);
-    window.addEventListener("mouseup",         onUp);
-    this.canvas.addEventListener("touchstart", onDown, { passive: true });
-    window.addEventListener("touchmove",       onMove, { passive: true });
-    window.addEventListener("touchend",        onUp);
-
-    this.canvas.style.cursor = "grab";
-  }
-
-  setPointerFromEvent(e) {
-    const r = this.canvas.getBoundingClientRect();
-    this.pointer.x = ((e.clientX - r.left) / r.width)  *  2 - 1;
-    this.pointer.y = ((e.clientY - r.top)  / r.height) * -2 + 1;
-  }
-
-  pickHotspot(e) {
-    this.setPointerFromEvent(e);
-    this.raycaster.setFromCamera(this.pointer, this.camera);
-    const meshes = [...this.hotspots.values()];
-    const hits = this.raycaster.intersectObjects(meshes, false);
-    return hits.length ? hits[0].object : null;
-  }
-
-  onPointerMove(e) {
-    const hit = this.pickHotspot(e);
-    if (hit) {
-      this.canvas.style.cursor = "pointer";
-      this.canvas.title = hit.userData.tooltip || labelForSite(hit.userData.site);
-    } else {
-      this.canvas.style.cursor = "grab";
-      this.canvas.title = "";
-    }
-  }
-
-  onClick(e) {
-    const hit = this.pickHotspot(e);
-    if (hit) {
-      openDrilldown(this.crewId, hit.userData.site);
-      // Mark this crew as selected so cross-crew dimming kicks in.
-      selectCrew(this.crewId);
-    }
-  }
-
-  setScores(scoresForCrew, timepoint) {
-    for (const [site, mesh] of this.hotspots) {
-      const cell = (scoresForCrew[site] || {})[timepoint];
-      // Hotspot size is fixed; only color (and a subtle emissive pop on
-      // high-disturbance regions) changes with score.
-      mesh.scale.setScalar(1.0);
-      if (!cell) {
-        mesh.material.color.set(0xeeeae0);
-        mesh.material.emissive.set(0x000000);
-        mesh.userData.tooltip = `${labelForSite(site)} · ${timepoint}: no swab collected`;
-      } else {
-        const css = colorForScore(cell.d, cell.within_baseline_noise);
-        mesh.material.color.set(this.cssToColor(css));
-        const intensity = Math.max(0, Math.min(1, cell.d - 0.4));
-        mesh.material.emissive.setRGB(intensity * 0.5, intensity * 0.15, 0.0);
-        const noiseTag = cell.within_baseline_noise ? " (within baseline noise)" : "";
-        mesh.userData.tooltip =
-          `${labelForSite(site)} · ${timepoint}\nd = ${cell.d.toFixed(2)} [95% CI ${cell.ci_lo.toFixed(2)}–${cell.ci_hi.toFixed(2)}], n=${cell.n_baseline}${noiseTag}`;
-      }
-    }
-    this.requestRender();
-  }
-
-  cssToColor(css) {
-    const m = css.match(/rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
-    if (!m) return new THREE.Color(0xeeeae0);
-    return new THREE.Color(parseInt(m[1]) / 255, parseInt(m[2]) / 255, parseInt(m[3]) / 255);
-  }
-
-  handleResize() {
-    const w = Math.max(1, this.canvas.clientWidth  || 280);
-    const h = Math.max(1, this.canvas.clientHeight || 336);
-    this.renderer.setSize(w, h, false);
-    this.camera.aspect = w / h;
-    this.camera.updateProjectionMatrix();
-    this.requestRender();
-  }
-
-  requestRender() {
-    if (this._raf) return;
-    this._raf = requestAnimationFrame(() => {
-      this._raf = null;
-      this.renderer.render(this.scene, this.camera);
-    });
-  }
-}
+const avatars = new Map();  // crew_id -> Avatar2D instance
 
 function mountAvatars() {
-  const gltf = state.astronautGltf;
-  document.querySelectorAll("figure[data-crew] .avatar-canvas").forEach(canvas => {
-    const fig = canvas.closest("figure[data-crew]");
+  document.querySelectorAll("figure[data-crew] .avatar").forEach(host => {
+    const fig = host.closest("figure[data-crew]");
     const crew = fig.dataset.crew;
-    if (!gltf) {
-      // Astronaut model didn't load; go straight to 2D SVG.
-      avatars.set(crew, new Avatar2D(canvas, crew));
-      return;
-    }
-    try {
-      avatars.set(crew, new Avatar3D(canvas, crew, gltf));
-    } catch (err) {
-      console.warn(`[${crew}] WebGL avatar failed, falling back to 2D SVG:`, err);
-      avatars.set(crew, new Avatar2D(canvas, crew));
-    }
+    avatars.set(crew, new Avatar2D(host, crew));
   });
 }
 
@@ -420,11 +159,8 @@ const AVATAR_SVG_TEMPLATE = `
 `;
 
 class Avatar2D {
-  constructor(canvas, crewId) {
+  constructor(host, crewId) {
     this.crewId = crewId;
-    // Replace the canvas with an inline SVG body (canvas is no longer needed).
-    const host = canvas.parentElement;
-    canvas.remove();
     host.innerHTML = AVATAR_SVG_TEMPLATE.replace(/\{ID\}/g, crewId);
     this.svg = host.querySelector("svg");
     this.regions = new Map();
@@ -887,7 +623,7 @@ function wireEvents() {
   });
 
   // Avatar grid: clicking the figcaption / canvas chrome (not a hotspot) selects
-  // the crew. Hotspot clicks are handled inside Avatar3D and call selectCrew()
+  // the crew. Region clicks are wired inside Avatar2D and call selectCrew()
   // themselves, so we only need a fallback here.
   const grid = document.getElementById("avatar-grid");
   grid.addEventListener("click", (e) => {
@@ -911,12 +647,11 @@ function wireEvents() {
 document.addEventListener("DOMContentLoaded", async () => {
   // Each step is isolated: one failing render shouldn't black out the whole page.
   try {
-    const { microbiome, bloodwork, opportunists, beneficials, gltf } = await loadAll();
+    const { microbiome, bloodwork, opportunists, beneficials } = await loadAll();
     state.microbiome = microbiome;
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
-    state.astronautGltf = gltf;
     safe("mountAvatars",        () => mountAvatars());
     safe("wireEvents",          () => wireEvents());
     safe("repaintAll",          () => repaintAll());

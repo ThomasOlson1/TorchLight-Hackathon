@@ -1037,21 +1037,13 @@ section.panel > details[open] > summary::after { content: " ↑"; }
   line-height: 0;
   position: relative;
   width: 100%;
-  height: 340px;
-  aspect-ratio: 5 / 6;
   background: linear-gradient(180deg, var(--bg-soft), var(--bg));
   overflow: hidden;
 }
-#avatar-grid .avatar-canvas {
-  width: 100% !important;
-  height: 100% !important;
-  display: block;
-  cursor: grab;
-  touch-action: none;
-}
 #avatar-grid .body-svg {
   width: 100%;
-  height: 100%;
+  height: auto;
+  max-height: 340px;
   display: block;
 }
 
