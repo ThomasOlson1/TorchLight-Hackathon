@@ -322,7 +322,121 @@ function hexToRgba(hex, a) {
 }
 
 // =============================================================
-// System summaries (4 high-level cards × 4 timeline checkpoints)
+// Per-crew personal recovery cards (primary view)
+// =============================================================
+
+const CREW_STATUS_ICON = {
+  back_to_baseline:    "✓",
+  mostly_back:         "✓",
+  partially_recovered: "◑",
+  still_shifting:     "◆",
+  no_data:            "·",
+};
+
+const CREW_OVERALL_LABEL = {
+  back_to_baseline:    "back to baseline",
+  mostly_back:         "mostly back to baseline",
+  partially_recovered: "partial recovery",
+  still_shifting:      "still shifting",
+  no_data:             "no data",
+};
+
+const SYSTEM_STATUS_ICON = {
+  back_to_baseline: "✓",
+  still_elevated:   "▲",
+  still_decreased:  "▼",
+  mixed:            "◆",
+  no_data:          "·",
+};
+
+const SYSTEM_STATUS_LABEL = {
+  back_to_baseline: "back within personal baseline",
+  still_elevated:   "still elevated",
+  still_decreased:  "still below baseline",
+  mixed:            "mixed shifts across the panel",
+  no_data:          "no data",
+};
+
+function renderCrewSummaries() {
+  const root = document.getElementById("crew-grid");
+  if (!root) return;
+  root.innerHTML = "";
+  const crewSummaries = (state.bloodwork && state.bloodwork.crew_summaries) || [];
+  if (!crewSummaries.length) {
+    root.innerHTML = `<p class="muted">No personal recovery cards available.</p>`;
+    return;
+  }
+
+  for (const c of crewSummaries) {
+    const card = document.createElement("details");
+    card.className = `crew-card status-${c.overall_status || "no_data"}`;
+
+    const statusIcon = CREW_STATUS_ICON[c.overall_status] || "·";
+    const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status;
+
+    // Closed state: crew identifier, overall status, and 4 system rows with status icons.
+    const systemRows = (c.systems || []).map(sys => `
+      <li class="crew-system-row sys-${sys.current_status} concern-${sys.concern_level}">
+        <span class="sys-status-icon" aria-hidden="true">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
+        <span class="sys-label">${escapeHtml(sys.label)}</span>
+        <span class="sys-status-text">${escapeHtml(SYSTEM_STATUS_LABEL[sys.current_status] || "")}</span>
+      </li>
+    `).join("");
+
+    const summaryHtml = `
+      <summary>
+        <div class="crew-card-headline">
+          <span class="crew-id">${escapeHtml(c.crew_id)}</span>
+          <span class="crew-overall-icon" aria-hidden="true">${statusIcon}</span>
+          <span class="crew-overall-label">${escapeHtml(overallLabel)}</span>
+        </div>
+        <p class="crew-overall-text">${escapeHtml(c.overall_text)}</p>
+        <ul class="crew-system-list">${systemRows}</ul>
+      </summary>
+    `;
+
+    // Expanded state: per-system per-checkpoint detail.
+    let bodyHtml = `<div class="crew-card-detail">`;
+    for (const sys of (c.systems || [])) {
+      bodyHtml += `
+        <section class="crew-system-detail">
+          <header>
+            <span class="sys-status-icon" aria-hidden="true">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
+            <h4>${escapeHtml(sys.label)}</h4>
+            <span class="concern-pill concern-${sys.concern_level}" title="${escapeHtml(sys.clinical_context || "")}">${escapeHtml(({expected:"expected",watch:"worth watching",follow_up:"follow-up advised"})[sys.concern_level] || sys.concern_level)}</span>
+          </header>
+          <p class="current-line">${escapeHtml(sys.current_text)}</p>
+          ${sys.clinical_context ? `<p class="clinical-context-inline">${escapeHtml(sys.clinical_context)}</p>` : ""}
+          <table class="crew-system-checkpoints">
+            <thead><tr><th>Timepoint</th><th>Direction</th><th>Headline % vs baseline</th></tr></thead>
+            <tbody>
+              ${(sys.checkpoints || []).map(cp => {
+                const pct = cp.headline_pct;
+                const dirClass = pct == null ? "muted" : (pct > 3 ? "up" : (pct < -3 ? "down" : "stable"));
+                const sign = pct == null ? "" : (pct > 0 ? "+" : "");
+                return `
+                  <tr>
+                    <td class="cp-cell-name">${escapeHtml(cp.checkpoint)}</td>
+                    <td class="cp-cell-status">${escapeHtml(cp.status)}</td>
+                    <td class="cp-cell-pct pct-${dirClass}">${pct == null ? "—" : sign + pct + "%"}</td>
+                  </tr>
+                `;
+              }).join("")}
+            </tbody>
+          </table>
+        </section>
+      `;
+    }
+    bodyHtml += `<p class="crew-card-meta muted">Compared against ${escapeHtml(c.crew_id)}'s own pre-flight baseline (mean of L-92, L-44, L-3). All four bloodwork panels (CBC, CMP, immune cytokines, cardiovascular markers).</p>`;
+    bodyHtml += `</div>`;
+
+    card.innerHTML = summaryHtml + bodyHtml;
+    root.appendChild(card);
+  }
+}
+
+// =============================================================
+// System summaries (auxiliary aggregated view)
 // =============================================================
 
 const SUMMARY_STATUS_ICON = {
@@ -374,40 +488,69 @@ function renderSystemSummaries() {
       </div>
     `).join("");
 
-    // Closed state: just title, status, and the timeline strip.
+    // Concern badge — shown in closed state so the reader can tell
+    // "expected" from "follow-up advised" without opening the card.
+    const concern = s.concern_level || "expected";
+    const concernLabel = ({
+      expected:  "expected",
+      watch:     "worth watching",
+      follow_up: "follow-up advised",
+    })[concern] || concern;
+
+    // Closed state: title, status, concern badge, timeline strip, one-line clinical context.
     const summary = `
       <summary>
         <span class="summary-icon" aria-hidden="true">${statusIcon}</span>
         <h3 class="summary-card-title">${escapeHtml(s.label)}</h3>
         <span class="summary-card-status-mini">${escapeHtml(statusLabel)}</span>
+        <span class="concern-pill concern-${concern}" title="${escapeHtml(s.clinical_context || "")}">${escapeHtml(concernLabel)}</span>
         <div class="cp-strip" aria-hidden="true">${stripCells}</div>
+        ${s.clinical_context ? `<p class="clinical-context">${escapeHtml(s.clinical_context)}</p>` : ""}
       </summary>
     `;
 
-    // Expanded state: the timeline list, sources.
-    let body = `<div class="summary-card-detail"><ol class="summary-timeline">`;
-    for (const f of (s.findings || [])) {
-      const pctBadge = (f.headline_pct != null)
-        ? `<span class="pct-badge ${f.headline_pct > 0 ? "up" : (f.headline_pct < 0 ? "down" : "muted")}">${f.headline_pct > 0 ? "+" : ""}${f.headline_pct}%</span>`
-        : "";
-      body += `
-        <li class="summary-finding">
-          <div class="summary-finding-cp">
-            <span class="cp-tag">${escapeHtml(f.checkpoint)}</span>
-            ${pctBadge}
-          </div>
-          <div class="summary-finding-body">
-            <p class="summary-finding-headline">${escapeHtml(f.headline)}</p>
-            <p class="summary-finding-detail">${escapeHtml(f.detail)}</p>
-          </div>
-        </li>
-      `;
+    // Expanded state: per-crew matrix. Rows = post-flight checkpoints, cols = crew.
+    // The first finding (L-3 baseline) gets a single line; the rest go into the matrix.
+    const crew = (state.bloodwork && state.bloodwork.crew) || ["C001","C002","C003","C004"];
+    const baselineFinding = (s.findings || []).find(f => f.checkpoint === "L-3");
+    const postFindings = (s.findings || []).filter(f => f.checkpoint !== "L-3");
+
+    const pctCell = (v) => {
+      if (v == null) return `<td class="pct-cell muted">—</td>`;
+      const dir = v > 3 ? "up" : (v < -3 ? "down" : "stable");
+      const sign = v > 0 ? "+" : "";
+      return `<td class="pct-cell pct-${dir}">${sign}${v}%</td>`;
+    };
+
+    let body = `<div class="summary-card-detail">`;
+    if (baselineFinding) {
+      body += `<p class="summary-baseline-note">${escapeHtml(baselineFinding.headline)}</p>`;
     }
-    body += `</ol>`;
+    body += `
+      <table class="crew-matrix">
+        <thead>
+          <tr>
+            <th></th>
+            ${crew.map(c => `<th>${escapeHtml(c)}</th>`).join("")}
+            <th class="avg-col">avg</th>
+          </tr>
+        </thead>
+        <tbody>
+    `;
+    for (const f of postFindings) {
+      const perCrew = f.per_crew_pct || {};
+      body += `<tr>
+        <th class="cp-row">${escapeHtml(f.checkpoint)}</th>
+        ${crew.map(c => pctCell(perCrew[c])).join("")}
+        ${pctCell(f.headline_pct)}
+      </tr>`;
+    }
+    body += `</tbody></table>`;
+    body += `<p class="crew-matrix-key muted">% change vs each crew's pre-flight baseline (mean of L-92, L-44, L-3) for ${escapeHtml(s.headline_label)}.</p>`;
     if (s.sources && s.sources.length) {
       body += `<p class="summary-card-sources"><strong>Sources:</strong> ${s.sources.map(escapeHtml).join("; ")}</p>`;
     }
-    body += `<p class="summary-card-meta muted">${s.n_metrics_tracked} metrics tracked</p></div>`;
+    body += `<p class="summary-card-meta muted">${s.n_metrics_tracked} metrics tracked across the panel.</p></div>`;
 
     card.innerHTML = summary + body;
     root.appendChild(card);
@@ -726,6 +869,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     safe("mountAvatars",        () => mountAvatars(bodyDoc));
     safe("wireEvents",          () => wireEvents());
     safe("repaintAll",          () => repaintAll());
+    safe("renderCrewSummaries",   () => renderCrewSummaries());
     safe("renderSystemSummaries", () => renderSystemSummaries());
     safe("renderFindings",      () => renderFindings());
     safe("renderRawBloodwork",  () => renderRawBloodwork());
@@ -743,6 +887,7 @@ function safe(label, fn) {
     // Surface the error inline if a known anchor element exists for that section.
     const anchors = {
       mountAvatars:           "avatar-grid",
+      renderCrewSummaries:    "crew-grid",
       renderSystemSummaries:  "summary-grid",
       renderFindings:         "findings-list",
       renderRawBloodwork:     "cbc-plots",

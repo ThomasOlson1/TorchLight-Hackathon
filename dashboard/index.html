@@ -23,30 +23,49 @@
   <main>
 
     <section class="panel" id="bloodwork-report">
-      <h2>What your blood tells us</h2>
+      <h2>Personal recovery report</h2>
       <p class="panel-subtitle">
-        Four high-level system snapshots across the mission timeline, synthesized from <strong>four bloodwork sources</strong>:
-        the Complete Blood Count (OSD-569), Comprehensive Metabolic Panel, immune cytokine panel, and
-        cardiovascular marker panel (all OSD-575). Each card walks the reader from each crew member's pre-flight
-        baseline (mean of L-92, L-44, L-3) through 1 day, 6 weeks, and 12+ weeks post-return.
+        One card per crew member. Each shows where that astronaut is now compared to their own pre-flight baseline
+        (mean of L-92, L-44, L-3 — never a population norm) across four bloodwork panels: CBC, CMP, immune
+        cytokines, and cardiovascular markers (OSD-569 + OSD-575).
       </p>
-      <div id="summary-grid" aria-live="polite">
-        <p class="muted">Loading summary...</p>
+      <aside class="summary-legend" aria-label="Legend">
+        <span class="legend-title">How to read each card:</span>
+        <span class="legend-item"><span class="status-dot back_to_baseline"></span>back within personal baseline</span>
+        <span class="legend-item"><span class="status-dot mixed"></span>mixed shifts</span>
+        <span class="legend-item"><span class="status-dot still_elevated"></span>still elevated</span>
+        <span class="legend-item"><span class="status-dot still_decreased"></span>still below baseline</span>
+        <span class="legend-sep"></span>
+        <span class="legend-item"><span class="concern-dot expected"></span>expected pattern</span>
+        <span class="legend-item"><span class="concern-dot watch"></span>worth watching</span>
+        <span class="legend-item"><span class="concern-dot follow_up"></span>follow-up advised</span>
+      </aside>
+      <div id="crew-grid" aria-live="polite">
+        <p class="muted">Loading personal cards...</p>
       </div>
+    </section>
+
+    <section class="panel" id="system-aggregate">
+      <details>
+        <summary>
+          <h2 style="display:inline">Aggregate view: by system</h2>
+          <span class="muted" style="margin-left:8px">— same data, organized by panel instead of by crew</span>
+        </summary>
+        <p class="panel-subtitle">
+          For comparing across crew within a single physiological system. Each card walks one system through
+          the mission timeline with per-crew percentages.
+        </p>
+        <div id="summary-grid"></div>
+      </details>
     </section>
 
     <section class="panel" id="findings-detail">
       <details>
         <summary>
-          <h2 style="display:inline">Per-system finding cards</h2>
-          <span class="muted" style="margin-left:8px">— click each to expand evidence</span>
+          <h2 style="display:inline">Per-system auto-generated findings</h2>
+          <span class="muted" style="margin-left:8px">— more granular detail</span>
         </summary>
-        <p class="panel-subtitle">
-          More granular auto-generated findings, one per physiological system at each post-flight timepoint
-          where shifts were detected. Each card lists the underlying metrics that drove the call, with per-crew
-          shift counts.
-        </p>
-        <div id="findings-list" aria-live="polite"></div>
+        <div id="findings-list"></div>
       </details>
     </section>
 

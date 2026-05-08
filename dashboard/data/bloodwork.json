@@ -24090,6 +24090,8 @@
       "label": "Hematology",
       "subtitle": "Red cells, white cells, platelets",
       "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+      "clinical_context": "A small red-cell-mass dip on landing is the well-documented post-flight fluid shift ('Spaceflight Anemia'). Anything still abnormal months later would be worth follow-up.",
+      "concern_level": "expected",
       "overall_status": "trended_down",
       "n_metrics_tracked": 19,
       "findings": [
@@ -24109,7 +24111,13 @@
           "n_up": 13,
           "n_down": 24,
           "n_stable": 38,
-          "headline_pct": -0.5
+          "headline_pct": -0.5,
+          "per_crew_pct": {
+            "C001": 0.9,
+            "C002": -2.5,
+            "C004": -0.9,
+            "C003": 0.5
+          }
         },
         {
           "checkpoint": "R+45",
@@ -24121,7 +24129,13 @@
           "n_up": 18,
           "n_down": 16,
           "n_stable": 41,
-          "headline_pct": 1.4
+          "headline_pct": 1.4,
+          "per_crew_pct": {
+            "C001": -1.7,
+            "C002": -1.6,
+            "C004": 0.1,
+            "C003": 8.6
+          }
         },
         {
           "checkpoint": "R+82",
@@ -24133,7 +24147,13 @@
           "n_up": 38,
           "n_down": 48,
           "n_stable": 63,
-          "headline_pct": 0.1
+          "headline_pct": 0.1,
+          "per_crew_pct": {
+            "C001": 1.7,
+            "C002": -2.8,
+            "C004": -1.6,
+            "C003": 3.0
+          }
         }
       ],
       "sources": [
@@ -24145,6 +24165,8 @@
       "label": "Kidneys, liver & metabolism",
       "subtitle": "BUN, creatinine, AST, ALT, glucose, electrolytes",
       "headline_label": "Kidney markers (BUN, creatinine)",
+      "clinical_context": "Mild BUN/creatinine elevation on the day of return usually reflects post-landing dehydration, not kidney damage. Sustained shifts at R+82+ would be worth following up.",
+      "concern_level": "expected",
       "overall_status": "trended_down",
       "n_metrics_tracked": 17,
       "findings": [
@@ -24164,7 +24186,13 @@
           "n_up": 18,
           "n_down": 15,
           "n_stable": 31,
-          "headline_pct": 3.7
+          "headline_pct": 3.7,
+          "per_crew_pct": {
+            "C001": -12.5,
+            "C002": 17.2,
+            "C003": -6.2,
+            "C004": 16.5
+          }
         },
         {
           "checkpoint": "R+45",
@@ -24176,7 +24204,13 @@
           "n_up": 13,
           "n_down": 26,
           "n_stable": 24,
-          "headline_pct": -2.5
+          "headline_pct": -2.5,
+          "per_crew_pct": {
+            "C001": -19.9,
+            "C002": 17.9,
+            "C003": -8.7,
+            "C004": 0.9
+          }
         },
         {
           "checkpoint": "R+82",
@@ -24188,7 +24222,13 @@
           "n_up": 31,
           "n_down": 28,
           "n_stable": 71,
-          "headline_pct": 8.4
+          "headline_pct": 8.4,
+          "per_crew_pct": {
+            "C001": 9.9,
+            "C002": 5.9,
+            "C003": 9.7,
+            "C004": 7.9
+          }
         }
       ],
       "sources": [
@@ -24200,6 +24240,8 @@
       "label": "Immune signaling",
       "subtitle": "Cytokines from the Eve immune panel",
       "headline_label": "Pro-inflammatory + adaptive cytokines",
+      "clinical_context": "Cytokine elevation right after spaceflight is expected (immune response to mission stressors). The interesting signal is how long it persists - persistent elevation past R+45 is worth watching.",
+      "concern_level": "watch",
       "overall_status": "trended_up",
       "n_metrics_tracked": 17,
       "findings": [
@@ -24219,7 +24261,13 @@
           "n_up": 19,
           "n_down": 5,
           "n_stable": 44,
-          "headline_pct": 48.2
+          "headline_pct": 48.2,
+          "per_crew_pct": {
+            "C001": 68.1,
+            "C002": 15.1,
+            "C003": 75.5,
+            "C004": 34.2
+          }
         },
         {
           "checkpoint": "R+45",
@@ -24231,7 +24279,13 @@
           "n_up": 15,
           "n_down": 20,
           "n_stable": 33,
-          "headline_pct": 30.1
+          "headline_pct": 30.1,
+          "per_crew_pct": {
+            "C001": -31.5,
+            "C002": 79.5,
+            "C003": 45.6,
+            "C004": 26.8
+          }
         },
         {
           "checkpoint": "R+82",
@@ -24243,7 +24297,13 @@
           "n_up": 39,
           "n_down": 39,
           "n_stable": 58,
-          "headline_pct": 19.5
+          "headline_pct": 19.5,
+          "per_crew_pct": {
+            "C001": 44.8,
+            "C002": -22.5,
+            "C003": 15.7,
+            "C004": 39.9
+          }
         }
       ],
       "sources": [
@@ -24255,6 +24315,8 @@
       "label": "Cardiovascular markers",
       "subtitle": "Acute-phase + cardiac signals",
       "headline_label": "C-reactive protein (CRP) + fibrinogen",
+      "clinical_context": "Late CRP/fibrinogen elevation (R+82+) is less typical for short-duration flights and would warrant clinical follow-up to rule out an unrelated inflammatory cause.",
+      "concern_level": "follow_up",
       "overall_status": "trended_up",
       "n_metrics_tracked": 9,
       "findings": [
@@ -24274,7 +24336,13 @@
           "n_up": 4,
           "n_down": 4,
           "n_stable": 28,
-          "headline_pct": 13.8
+          "headline_pct": 13.8,
+          "per_crew_pct": {
+            "C001": -4.6,
+            "C002": -16.7,
+            "C003": 52.5,
+            "C004": 24.1
+          }
         },
         {
           "checkpoint": "R+45",
@@ -24286,7 +24354,13 @@
           "n_up": 6,
           "n_down": 1,
           "n_stable": 29,
-          "headline_pct": -7.8
+          "headline_pct": -7.8,
+          "per_crew_pct": {
+            "C001": -25.8,
+            "C002": -32.5,
+            "C003": -0.1,
+            "C004": 27.0
+          }
         },
         {
           "checkpoint": "R+82",
@@ -24298,11 +24372,655 @@
           "n_up": 26,
           "n_down": 4,
           "n_stable": 42,
-          "headline_pct": 30.4
+          "headline_pct": 30.4,
+          "per_crew_pct": {
+            "C001": 63.5,
+            "C002": 32.8,
+            "C003": -34.4,
+            "C004": 59.7
+          }
         }
       ],
       "sources": [
         "Serum cardiovascular markers (Eve panel) (OSD-575)"
+      ]
+    }
+  ],
+  "crew_summaries": [
+    {
+      "crew_id": "C001",
+      "overall_text": "Active shifts in all 4 tracked systems.",
+      "overall_status": "still_shifting",
+      "systems": [
+        {
+          "system_id": "hematology",
+          "label": "Hematology",
+          "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+          "concern_level": "expected",
+          "clinical_context": "A small red-cell-mass dip on landing is the well-documented post-flight fluid shift ('Spaceflight Anemia'). Anything still abnormal months later would be worth follow-up.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "decreased",
+              "headline_pct": 0.9,
+              "n_up": 2,
+              "n_down": 7,
+              "n_stable": 10
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "decreased",
+              "headline_pct": -1.7,
+              "n_up": 1,
+              "n_down": 5,
+              "n_stable": 13
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": 1.7,
+              "n_up": 11,
+              "n_down": 13,
+              "n_stable": 14
+            }
+          ]
+        },
+        {
+          "system_id": "metabolic",
+          "label": "Kidneys, liver & metabolism",
+          "headline_label": "Kidney markers (BUN, creatinine)",
+          "concern_level": "expected",
+          "clinical_context": "Mild BUN/creatinine elevation on the day of return usually reflects post-landing dehydration, not kidney damage. Sustained shifts at R+82+ would be worth following up.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "mixed",
+              "headline_pct": -12.5,
+              "n_up": 3,
+              "n_down": 4,
+              "n_stable": 9
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "decreased",
+              "headline_pct": -19.9,
+              "n_up": 1,
+              "n_down": 7,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": 9.9,
+              "n_up": 9,
+              "n_down": 6,
+              "n_stable": 18
+            }
+          ]
+        },
+        {
+          "system_id": "immune",
+          "label": "Immune signaling",
+          "headline_label": "Pro-inflammatory + adaptive cytokines",
+          "concern_level": "watch",
+          "clinical_context": "Cytokine elevation right after spaceflight is expected (immune response to mission stressors). The interesting signal is how long it persists - persistent elevation past R+45 is worth watching.",
+          "current_status": "still_elevated",
+          "current_text": "At R+82: still elevated (+44.8% on headline metric vs baseline).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": 68.1,
+              "n_up": 7,
+              "n_down": 0,
+              "n_stable": 10
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "decreased",
+              "headline_pct": -31.5,
+              "n_up": 0,
+              "n_down": 13,
+              "n_stable": 4
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "elevated",
+              "headline_pct": 44.8,
+              "n_up": 13,
+              "n_down": 7,
+              "n_stable": 14
+            }
+          ]
+        },
+        {
+          "system_id": "cardiovascular",
+          "label": "Cardiovascular markers",
+          "headline_label": "C-reactive protein (CRP) + fibrinogen",
+          "concern_level": "follow_up",
+          "clinical_context": "Late CRP/fibrinogen elevation (R+82+) is less typical for short-duration flights and would warrant clinical follow-up to rule out an unrelated inflammatory cause.",
+          "current_status": "still_elevated",
+          "current_text": "At R+82: still elevated (+63.5% on headline metric vs baseline).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": -4.6,
+              "n_up": 2,
+              "n_down": 0,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "elevated",
+              "headline_pct": -25.8,
+              "n_up": 3,
+              "n_down": 0,
+              "n_stable": 6
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "elevated",
+              "headline_pct": 63.5,
+              "n_up": 15,
+              "n_down": 0,
+              "n_stable": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crew_id": "C002",
+      "overall_text": "Active shifts in all 4 tracked systems.",
+      "overall_status": "still_shifting",
+      "systems": [
+        {
+          "system_id": "hematology",
+          "label": "Hematology",
+          "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+          "concern_level": "expected",
+          "clinical_context": "A small red-cell-mass dip on landing is the well-documented post-flight fluid shift ('Spaceflight Anemia'). Anything still abnormal months later would be worth follow-up.",
+          "current_status": "still_decreased",
+          "current_text": "At R+82: still below baseline (-2.8% on headline metric).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "mixed",
+              "headline_pct": -2.5,
+              "n_up": 5,
+              "n_down": 6,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "elevated",
+              "headline_pct": -1.6,
+              "n_up": 7,
+              "n_down": 4,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "decreased",
+              "headline_pct": -2.8,
+              "n_up": 7,
+              "n_down": 14,
+              "n_stable": 14
+            }
+          ]
+        },
+        {
+          "system_id": "metabolic",
+          "label": "Kidneys, liver & metabolism",
+          "headline_label": "Kidney markers (BUN, creatinine)",
+          "concern_level": "expected",
+          "clinical_context": "Mild BUN/creatinine elevation on the day of return usually reflects post-landing dehydration, not kidney damage. Sustained shifts at R+82+ would be worth following up.",
+          "current_status": "still_decreased",
+          "current_text": "At R+82: still below baseline (+5.9% on headline metric).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "decreased",
+              "headline_pct": 17.2,
+              "n_up": 2,
+              "n_down": 5,
+              "n_stable": 9
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "decreased",
+              "headline_pct": 17.9,
+              "n_up": 4,
+              "n_down": 9,
+              "n_stable": 3
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "decreased",
+              "headline_pct": 5.9,
+              "n_up": 5,
+              "n_down": 8,
+              "n_stable": 19
+            }
+          ]
+        },
+        {
+          "system_id": "immune",
+          "label": "Immune signaling",
+          "headline_label": "Pro-inflammatory + adaptive cytokines",
+          "concern_level": "watch",
+          "clinical_context": "Cytokine elevation right after spaceflight is expected (immune response to mission stressors). The interesting signal is how long it persists - persistent elevation past R+45 is worth watching.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "decreased",
+              "headline_pct": 15.1,
+              "n_up": 1,
+              "n_down": 4,
+              "n_stable": 12
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "elevated",
+              "headline_pct": 79.5,
+              "n_up": 5,
+              "n_down": 2,
+              "n_stable": 10
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": -22.5,
+              "n_up": 8,
+              "n_down": 11,
+              "n_stable": 15
+            }
+          ]
+        },
+        {
+          "system_id": "cardiovascular",
+          "label": "Cardiovascular markers",
+          "headline_label": "C-reactive protein (CRP) + fibrinogen",
+          "concern_level": "follow_up",
+          "clinical_context": "Late CRP/fibrinogen elevation (R+82+) is less typical for short-duration flights and would warrant clinical follow-up to rule out an unrelated inflammatory cause.",
+          "current_status": "still_elevated",
+          "current_text": "At R+82: still elevated (+32.8% on headline metric vs baseline).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "decreased",
+              "headline_pct": -16.7,
+              "n_up": 0,
+              "n_down": 4,
+              "n_stable": 5
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "stable",
+              "headline_pct": -32.5,
+              "n_up": 0,
+              "n_down": 0,
+              "n_stable": 9
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "elevated",
+              "headline_pct": 32.8,
+              "n_up": 5,
+              "n_down": 2,
+              "n_stable": 11
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crew_id": "C003",
+      "overall_text": "Active shifts in all 4 tracked systems.",
+      "overall_status": "still_shifting",
+      "systems": [
+        {
+          "system_id": "hematology",
+          "label": "Hematology",
+          "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+          "concern_level": "expected",
+          "clinical_context": "A small red-cell-mass dip on landing is the well-documented post-flight fluid shift ('Spaceflight Anemia'). Anything still abnormal months later would be worth follow-up.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "decreased",
+              "headline_pct": 0.5,
+              "n_up": 3,
+              "n_down": 6,
+              "n_stable": 10
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "mixed",
+              "headline_pct": 8.6,
+              "n_up": 6,
+              "n_down": 4,
+              "n_stable": 9
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": 3.0,
+              "n_up": 11,
+              "n_down": 9,
+              "n_stable": 18
+            }
+          ]
+        },
+        {
+          "system_id": "metabolic",
+          "label": "Kidneys, liver & metabolism",
+          "headline_label": "Kidney markers (BUN, creatinine)",
+          "concern_level": "expected",
+          "clinical_context": "Mild BUN/creatinine elevation on the day of return usually reflects post-landing dehydration, not kidney damage. Sustained shifts at R+82+ would be worth following up.",
+          "current_status": "still_elevated",
+          "current_text": "At R+82: still elevated (+9.7% on headline metric vs baseline).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": -6.2,
+              "n_up": 5,
+              "n_down": 3,
+              "n_stable": 8
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "mixed",
+              "headline_pct": -8.7,
+              "n_up": 6,
+              "n_down": 4,
+              "n_stable": 6
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "elevated",
+              "headline_pct": 9.7,
+              "n_up": 10,
+              "n_down": 5,
+              "n_stable": 18
+            }
+          ]
+        },
+        {
+          "system_id": "immune",
+          "label": "Immune signaling",
+          "headline_label": "Pro-inflammatory + adaptive cytokines",
+          "concern_level": "watch",
+          "clinical_context": "Cytokine elevation right after spaceflight is expected (immune response to mission stressors). The interesting signal is how long it persists - persistent elevation past R+45 is worth watching.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": 75.5,
+              "n_up": 7,
+              "n_down": 0,
+              "n_stable": 10
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "elevated",
+              "headline_pct": 45.6,
+              "n_up": 7,
+              "n_down": 4,
+              "n_stable": 6
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": 15.7,
+              "n_up": 10,
+              "n_down": 11,
+              "n_stable": 13
+            }
+          ]
+        },
+        {
+          "system_id": "cardiovascular",
+          "label": "Cardiovascular markers",
+          "headline_label": "C-reactive protein (CRP) + fibrinogen",
+          "concern_level": "follow_up",
+          "clinical_context": "Late CRP/fibrinogen elevation (R+82+) is less typical for short-duration flights and would warrant clinical follow-up to rule out an unrelated inflammatory cause.",
+          "current_status": "still_elevated",
+          "current_text": "At R+82: still elevated (-34.4% on headline metric vs baseline).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": 52.5,
+              "n_up": 2,
+              "n_down": 0,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "elevated",
+              "headline_pct": -0.1,
+              "n_up": 2,
+              "n_down": 0,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "elevated",
+              "headline_pct": -34.4,
+              "n_up": 3,
+              "n_down": 1,
+              "n_stable": 14
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "crew_id": "C004",
+      "overall_text": "Active shifts in all 4 tracked systems.",
+      "overall_status": "still_shifting",
+      "systems": [
+        {
+          "system_id": "hematology",
+          "label": "Hematology",
+          "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+          "concern_level": "expected",
+          "clinical_context": "A small red-cell-mass dip on landing is the well-documented post-flight fluid shift ('Spaceflight Anemia'). Anything still abnormal months later would be worth follow-up.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "decreased",
+              "headline_pct": -0.9,
+              "n_up": 3,
+              "n_down": 5,
+              "n_stable": 11
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "mixed",
+              "headline_pct": 0.1,
+              "n_up": 4,
+              "n_down": 3,
+              "n_stable": 12
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": -1.6,
+              "n_up": 9,
+              "n_down": 12,
+              "n_stable": 17
+            }
+          ]
+        },
+        {
+          "system_id": "metabolic",
+          "label": "Kidneys, liver & metabolism",
+          "headline_label": "Kidney markers (BUN, creatinine)",
+          "concern_level": "expected",
+          "clinical_context": "Mild BUN/creatinine elevation on the day of return usually reflects post-landing dehydration, not kidney damage. Sustained shifts at R+82+ would be worth following up.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": 16.5,
+              "n_up": 8,
+              "n_down": 3,
+              "n_stable": 5
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "decreased",
+              "headline_pct": 0.9,
+              "n_up": 2,
+              "n_down": 6,
+              "n_stable": 8
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": 7.9,
+              "n_up": 7,
+              "n_down": 9,
+              "n_stable": 16
+            }
+          ]
+        },
+        {
+          "system_id": "immune",
+          "label": "Immune signaling",
+          "headline_label": "Pro-inflammatory + adaptive cytokines",
+          "concern_level": "watch",
+          "clinical_context": "Cytokine elevation right after spaceflight is expected (immune response to mission stressors). The interesting signal is how long it persists - persistent elevation past R+45 is worth watching.",
+          "current_status": "mixed",
+          "current_text": "At R+82: mixed shifts across the panel.",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "elevated",
+              "headline_pct": 34.2,
+              "n_up": 4,
+              "n_down": 1,
+              "n_stable": 12
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "elevated",
+              "headline_pct": 26.8,
+              "n_up": 3,
+              "n_down": 1,
+              "n_stable": 13
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "mixed",
+              "headline_pct": 39.9,
+              "n_up": 8,
+              "n_down": 10,
+              "n_stable": 16
+            }
+          ]
+        },
+        {
+          "system_id": "cardiovascular",
+          "label": "Cardiovascular markers",
+          "headline_label": "C-reactive protein (CRP) + fibrinogen",
+          "concern_level": "follow_up",
+          "clinical_context": "Late CRP/fibrinogen elevation (R+82+) is less typical for short-duration flights and would warrant clinical follow-up to rule out an unrelated inflammatory cause.",
+          "current_status": "still_elevated",
+          "current_text": "At R+82: still elevated (+59.7% on headline metric vs baseline).",
+          "checkpoints": [
+            {
+              "checkpoint": "R+1",
+              "checkpoint_label": "1 day post-return",
+              "status": "stable",
+              "headline_pct": 24.1,
+              "n_up": 0,
+              "n_down": 0,
+              "n_stable": 9
+            },
+            {
+              "checkpoint": "R+45",
+              "checkpoint_label": "6 weeks post-return",
+              "status": "mixed",
+              "headline_pct": 27.0,
+              "n_up": 1,
+              "n_down": 1,
+              "n_stable": 7
+            },
+            {
+              "checkpoint": "R+82",
+              "checkpoint_label": "12 weeks+ post-return",
+              "status": "elevated",
+              "headline_pct": 59.7,
+              "n_up": 3,
+              "n_down": 1,
+              "n_stable": 14
+            }
+          ]
+        }
       ]
     }
   ]

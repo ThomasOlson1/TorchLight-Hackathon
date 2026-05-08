@@ -126,6 +126,282 @@ section.panel .panel-subtitle {
   font-size: 14px;
 }
 
+/* ---------- Per-crew personal recovery cards ---------- */
+
+#crew-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.crew-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-left: 4px solid #b0b8c2;
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.crew-card.status-back_to_baseline    { border-left-color: #6b9e6e; }
+.crew-card.status-mostly_back         { border-left-color: #6b9e6e; }
+.crew-card.status-partially_recovered { border-left-color: #b08000; }
+.crew-card.status-still_shifting      { border-left-color: #d94a1f; }
+.crew-card.status-no_data             { border-left-color: #c8c8c8; }
+
+.crew-card[open] { box-shadow: var(--shadow); }
+
+.crew-card > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 14px 16px;
+  user-select: none;
+}
+.crew-card > summary::-webkit-details-marker { display: none; }
+.crew-card > summary::marker { display: none; }
+.crew-card > summary:hover { background: #f7f8fa; }
+
+.crew-card-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.crew-id {
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.crew-overall-icon {
+  font-size: 16px;
+  width: 18px;
+  text-align: center;
+}
+.crew-card.status-back_to_baseline .crew-overall-icon,
+.crew-card.status-mostly_back .crew-overall-icon { color: #4a7d4d; }
+.crew-card.status-partially_recovered .crew-overall-icon { color: #b08000; }
+.crew-card.status-still_shifting .crew-overall-icon { color: #d94a1f; }
+
+.crew-overall-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: lowercase;
+}
+
+.crew-overall-text {
+  margin: 6px 0 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.crew-system-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crew-system-row {
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 8px;
+  background: #f7f8fa;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.sys-status-icon {
+  font-size: 14px;
+  text-align: center;
+  width: 18px;
+}
+
+.crew-system-row.sys-back_to_baseline .sys-status-icon { color: #4a7d4d; }
+.crew-system-row.sys-still_elevated   .sys-status-icon { color: #d94a1f; }
+.crew-system-row.sys-still_decreased  .sys-status-icon { color: #2956a8; }
+.crew-system-row.sys-mixed            .sys-status-icon { color: #b08000; }
+.crew-system-row.sys-no_data          .sys-status-icon { color: #b0b0b0; }
+
+.sys-label { font-weight: 600; }
+
+.sys-status-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+/* Subtle concern halo on the system row */
+.crew-system-row.concern-watch     { background: linear-gradient(to right, #f7f8fa 60%, #fff7d8); }
+.crew-system-row.concern-follow_up { background: linear-gradient(to right, #f7f8fa 60%, #fbe4d7); }
+
+.crew-card-detail {
+  padding: 6px 16px 16px;
+  border-top: 1px solid var(--border);
+  background: #fbfcfd;
+}
+
+.crew-system-detail {
+  margin: 14px 0;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.crew-system-detail header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.crew-system-detail header h4 {
+  margin: 0;
+  font-size: 14px;
+  flex: 1;
+}
+.current-line {
+  margin: 4px 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.clinical-context-inline {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+.crew-system-checkpoints {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 4px;
+}
+.crew-system-checkpoints th,
+.crew-system-checkpoints td {
+  padding: 4px 6px;
+  border-bottom: 1px solid #f0f3f6;
+  text-align: left;
+}
+.crew-system-checkpoints thead th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+.crew-system-checkpoints .cp-cell-name {
+  font-family: var(--mono);
+  font-weight: 700;
+}
+.crew-system-checkpoints .cp-cell-pct {
+  font-family: var(--mono);
+  font-weight: 600;
+  text-align: right;
+}
+.crew-system-checkpoints .cp-cell-pct.pct-up    { color: #b3320f; }
+.crew-system-checkpoints .cp-cell-pct.pct-down  { color: #1c4d99; }
+.crew-system-checkpoints .cp-cell-pct.pct-stable, .crew-system-checkpoints .cp-cell-pct.muted { color: var(--text-muted); }
+
+.crew-card-meta { margin: 14px 0 0; font-size: 11px; }
+
+.status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+.status-dot.back_to_baseline { background: #6b9e6e; }
+.status-dot.still_elevated   { background: #d94a1f; }
+.status-dot.still_decreased  { background: #2956a8; }
+.status-dot.mixed            { background: #b08000; }
+
+@media (max-width: 1000px) {
+  #crew-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Summary legend (above the grid) ---------- */
+
+.summary-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  background: #f7f8fa;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.summary-legend .legend-title {
+  font-weight: 600;
+  color: var(--text);
+  margin-right: 4px;
+}
+
+.summary-legend .legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.summary-legend .legend-item .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  display: inline-block;
+}
+.summary-legend .legend-item .dot.dot-up      { background: #d94a1f; }
+.summary-legend .legend-item .dot.dot-down    { background: #2956a8; }
+.summary-legend .legend-item .dot.dot-stable  { background: #6b9e6e; }
+
+.summary-legend .legend-sep {
+  width: 1px; height: 20px;
+  background: var(--border);
+  display: inline-block;
+}
+
+.concern-dot {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1px solid;
+}
+.concern-dot.expected   { background: #dff5e0; border-color: #6ec678; }
+.concern-dot.watch      { background: #fff4ce; border-color: #d4b035; }
+.concern-dot.follow_up  { background: #fce0d6; border-color: #d96030; }
+
+/* ---------- Concern pill (per-card, in the closed summary) ---------- */
+
+.concern-pill {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+  white-space: nowrap;
+  cursor: help;
+}
+.concern-pill.concern-expected  { background: #ecf6ed; color: #1f5e2a; border-color: #b9dcc1; }
+.concern-pill.concern-watch     { background: #fff7d8; color: #6f4e00; border-color: #e0c66a; }
+.concern-pill.concern-follow_up { background: #fbe4d7; color: #7a2c0c; border-color: #ec9a72; }
+
+.clinical-context {
+  grid-row: 3;
+  grid-column: 2 / -1;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
 /* ---------- System summary grid (4 high-level cards, click to expand) ---------- */
 
 #summary-grid {
@@ -156,12 +432,25 @@ section.panel .panel-subtitle {
   cursor: pointer;
   padding: 12px 14px;
   display: grid;
-  grid-template-columns: 18px 1fr auto;
-  grid-template-rows: auto auto;
+  grid-template-columns: 18px 1fr auto auto;
+  grid-template-rows: auto auto auto;
   column-gap: 10px;
   row-gap: 6px;
   align-items: center;
   user-select: none;
+}
+.summary-card > summary .concern-pill {
+  grid-row: 1;
+  grid-column: 4;
+  justify-self: end;
+}
+.summary-card > summary .summary-card-status-mini {
+  grid-row: 1;
+  grid-column: 3;
+}
+.summary-card > summary .cp-strip {
+  grid-row: 2;
+  grid-column: 2 / -1;
 }
 .summary-card > summary::-webkit-details-marker { display: none; }
 .summary-card > summary::marker { display: none; }
@@ -249,6 +538,59 @@ section.panel .panel-subtitle {
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+/* ---------- Per-crew matrix (in expanded summary card) ---------- */
+
+.summary-baseline-note {
+  margin: 6px 0 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.crew-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+
+.crew-matrix th,
+.crew-matrix td {
+  padding: 5px 6px;
+  text-align: center;
+  border-bottom: 1px solid #f0f3f6;
+}
+.crew-matrix thead th {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  background: #f7f8fa;
+}
+.crew-matrix th.cp-row {
+  text-align: left;
+  font-family: var(--mono);
+  font-weight: 700;
+  background: #f7f8fa;
+  color: var(--text);
+  font-size: 11px;
+}
+.crew-matrix .pct-cell {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+.crew-matrix .pct-cell.pct-up      { color: #b3320f; background: #fff1ea; }
+.crew-matrix .pct-cell.pct-down    { color: #1c4d99; background: #eaf1fb; }
+.crew-matrix .pct-cell.pct-stable  { color: var(--text-muted); }
+.crew-matrix .pct-cell.muted       { color: #b6bcc4; }
+.crew-matrix .avg-col              { background: #f7f8fa; font-weight: 700; }
+.crew-matrix th.avg-col            { color: var(--text); }
+
+.crew-matrix-key {
+  margin: 4px 0 8px;
+  font-size: 11px;
 }
 
 .summary-finding {

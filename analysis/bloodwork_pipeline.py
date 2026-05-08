@@ -594,6 +594,8 @@ SUMMARY_CARDS = [
         "systems": ["red_cells", "white_cells", "platelets"],
         "headline": [("cbc", "hemoglobin"), ("cbc", "rbc"), ("cbc", "hematocrit")],
         "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+        "clinical_context": "A small red-cell-mass dip on landing is the well-documented post-flight fluid shift ('Spaceflight Anemia'). Anything still abnormal months later would be worth follow-up.",
+        "concern_level": "expected",
     },
     {
         "id": "metabolic",
@@ -602,6 +604,8 @@ SUMMARY_CARDS = [
         "systems": ["renal", "hepatic", "metabolic", "protein"],
         "headline": [("cmp", "creatinine"), ("cmp", "urea_nitrogen_bun")],
         "headline_label": "Kidney markers (BUN, creatinine)",
+        "clinical_context": "Mild BUN/creatinine elevation on the day of return usually reflects post-landing dehydration, not kidney damage. Sustained shifts at R+82+ would be worth following up.",
+        "concern_level": "expected",
     },
     {
         "id": "immune",
@@ -610,6 +614,8 @@ SUMMARY_CARDS = [
         "systems": ["inflammation", "adaptive"],
         "headline": [("immune_cytokines", "il_6"), ("immune_cytokines", "il_2"), ("immune_cytokines", "il_10")],
         "headline_label": "Pro-inflammatory + adaptive cytokines",
+        "clinical_context": "Cytokine elevation right after spaceflight is expected (immune response to mission stressors). The interesting signal is how long it persists - persistent elevation past R+45 is worth watching.",
+        "concern_level": "watch",
     },
     {
         "id": "cardiovascular",
@@ -618,6 +624,8 @@ SUMMARY_CARDS = [
         "systems": ["cardiac"],
         "headline": [("cardiac_cytokines", "crp"), ("cardiac_cytokines", "fibrinogen")],
         "headline_label": "C-reactive protein (CRP) + fibrinogen",
+        "clinical_context": "Late CRP/fibrinogen elevation (R+82+) is less typical for short-duration flights and would warrant clinical follow-up to rule out an unrelated inflammatory cause.",
+        "concern_level": "follow_up",
     },
 ]
 
@@ -670,10 +678,7 @@ def crew_shift_summary(panels_data, metrics, tp_list):
 
 
 def headline_pct_change(panels_data, headline_keys, tp_list):
-    """Average % change across headline metrics x crew x given timepoints.
-
-    Used to print the "<headline metric> averaged ±X% from baseline at <tp>" line.
-    """
+    """Average % change across headline metrics x crew x given timepoints."""
     pct_values = []
     for (panel, mk) in headline_keys:
         per_crew = panels_data.get(panel, {}).get(mk, {})
@@ -685,6 +690,152 @@ def headline_pct_change(panels_data, headline_keys, tp_list):
     if not pct_values:
         return None
     return float(np.mean(pct_values))
+
+
+def headline_pct_per_crew(panels_data, headline_keys, tp_list):
+    """Per-crew average % change across headline metrics in the given timepoints.
+
+    Returns: { crew_id: pct_value } — one entry per crew with at least one observation.
+    """
+    out: dict[str, list[float]] = defaultdict(list)
+    for (panel, mk) in headline_keys:
+        per_crew = panels_data.get(panel, {}).get(mk, {})
+        for crew, cstats in per_crew.items():
+            for tp in tp_list:
+                shift = cstats.get("shifts", {}).get(tp)
+                if shift is not None:
+                    out[crew].append(shift["pct"])
+    return {crew: round(float(np.mean(vals)), 1) for crew, vals in out.items() if vals}
+
+
+def build_crew_summaries(panels_data, metric_meta, panel_labels) -> list[dict]:
+    """One personal-report card per crew member.
+
+    Each crew card contains 4 system rows. For each system, we walk that
+    crew member's own values from baseline through the 3 post-flight
+    checkpoints, classifying status at each step.
+    """
+    summaries = []
+    for crew in sorted(VALID_CREW):
+        systems_summary = []
+        for card_spec in SUMMARY_CARDS:
+            all_metrics = aggregate_system_metrics(panels_data, metric_meta, set(card_spec["systems"]))
+            headline_metrics = card_spec["headline"]
+
+            # Per-checkpoint status for THIS crew alone.
+            checkpoints_for_crew = []
+            for cp in TIMELINE_CHECKPOINTS[1:]:  # skip baseline
+                # Headline pct for this crew at this checkpoint
+                pcts = []
+                for (panel, mk) in headline_metrics:
+                    cstats = panels_data.get(panel, {}).get(mk, {}).get(crew)
+                    if not cstats:
+                        continue
+                    for tp in cp["tps"]:
+                        sh = cstats.get("shifts", {}).get(tp)
+                        if sh is not None:
+                            pcts.append(sh["pct"])
+                head_pct = round(float(np.mean(pcts)), 1) if pcts else None
+
+                # All-metric direction count for this crew
+                n_up = n_down = n_stable = 0
+                for (panel, mk) in all_metrics:
+                    cstats = panels_data.get(panel, {}).get(mk, {}).get(crew)
+                    if not cstats:
+                        continue
+                    for tp in cp["tps"]:
+                        sh = cstats.get("shifts", {}).get(tp)
+                        if not sh:
+                            continue
+                        if sh["shifted"]:
+                            if sh["direction"] == "up":   n_up += 1
+                            elif sh["direction"] == "down": n_down += 1
+                        else:
+                            n_stable += 1
+                total = n_up + n_down + n_stable
+                if total == 0:
+                    status = "no_data"
+                elif (n_up + n_down) / total < 0.20:
+                    status = "stable"
+                elif n_up > n_down * 1.5:
+                    status = "elevated"
+                elif n_down > n_up * 1.5:
+                    status = "decreased"
+                else:
+                    status = "mixed"
+                checkpoints_for_crew.append({
+                    "checkpoint": cp["key"],
+                    "checkpoint_label": cp["label"],
+                    "status": status,
+                    "headline_pct": head_pct,
+                    "n_up": n_up, "n_down": n_down, "n_stable": n_stable,
+                })
+
+            # Current status = the latest checkpoint with data for this crew.
+            current = None
+            for cp in reversed(checkpoints_for_crew):
+                if cp["status"] != "no_data":
+                    current = cp
+                    break
+
+            # One-line "where you are now" for this system.
+            if current is None:
+                current_text = "No post-flight data on file."
+                current_status = "no_data"
+            elif current["status"] == "stable":
+                current_text = f"At {current['checkpoint']}: within your pre-flight range."
+                current_status = "back_to_baseline"
+            elif current["status"] == "elevated":
+                current_text = f"At {current['checkpoint']}: still elevated ({current['headline_pct']:+.1f}% on headline metric vs baseline)."
+                current_status = "still_elevated"
+            elif current["status"] == "decreased":
+                current_text = f"At {current['checkpoint']}: still below baseline ({current['headline_pct']:+.1f}% on headline metric)."
+                current_status = "still_decreased"
+            elif current["status"] == "mixed":
+                current_text = f"At {current['checkpoint']}: mixed shifts across the panel."
+                current_status = "mixed"
+            else:
+                current_text = "No clear pattern."
+                current_status = "no_data"
+
+            systems_summary.append({
+                "system_id": card_spec["id"],
+                "label": card_spec["label"],
+                "headline_label": card_spec["headline_label"],
+                "concern_level": card_spec.get("concern_level", "expected"),
+                "clinical_context": card_spec.get("clinical_context", ""),
+                "current_status": current_status,
+                "current_text": current_text,
+                "checkpoints": checkpoints_for_crew,
+            })
+
+        # Overall "where you are now" line for this crew member.
+        n_back = sum(1 for s in systems_summary if s["current_status"] == "back_to_baseline")
+        n_total = sum(1 for s in systems_summary if s["current_status"] != "no_data")
+        if n_total == 0:
+            overall_text = "Insufficient post-flight data."
+            overall_status = "no_data"
+        elif n_back == n_total:
+            overall_text = f"Back to baseline across all {n_total} systems."
+            overall_status = "back_to_baseline"
+        elif n_back >= n_total - 1:
+            overall_text = f"Back to baseline in {n_back} of {n_total} systems; one is still shifting."
+            overall_status = "mostly_back"
+        elif n_back == 0:
+            overall_text = f"Active shifts in all {n_total} tracked systems."
+            overall_status = "still_shifting"
+        else:
+            overall_text = f"Back to baseline in {n_back} of {n_total} systems."
+            overall_status = "partially_recovered"
+
+        summaries.append({
+            "crew_id": crew,
+            "overall_text": overall_text,
+            "overall_status": overall_status,
+            "systems": systems_summary,
+        })
+
+    return summaries
 
 
 def build_system_summaries(panels_data, metric_meta, panel_labels) -> list[dict]:
@@ -743,6 +894,7 @@ def build_system_summaries(panels_data, metric_meta, panel_labels) -> list[dict]
 
             checkpoint_label = cp["label"]
             tps_phrase = " / ".join(cp["tps"]) if len(cp["tps"]) > 1 else cp["tps"][0]
+            per_crew_pct = headline_pct_per_crew(panels_data, headline_metrics, cp["tps"])
             findings.append({
                 "checkpoint": cp["key"],
                 "checkpoint_label": checkpoint_label,
@@ -754,6 +906,7 @@ def build_system_summaries(panels_data, metric_meta, panel_labels) -> list[dict]
                 "n_down": n_down,
                 "n_stable": n_stable,
                 "headline_pct": round(head_pct, 1) if head_pct is not None else None,
+                "per_crew_pct": per_crew_pct,
             })
 
         # Overall status across the post-flight window
@@ -780,6 +933,8 @@ def build_system_summaries(panels_data, metric_meta, panel_labels) -> list[dict]
             "label": card["label"],
             "subtitle": card["subtitle"],
             "headline_label": card["headline_label"],
+            "clinical_context": card.get("clinical_context", ""),
+            "concern_level": card.get("concern_level", "expected"),
             "overall_status": overall,
             "n_metrics_tracked": n_metrics,
             "findings": findings,
@@ -864,14 +1019,17 @@ def main() -> None:
     # Findings (per-system, kept for the underlying detail)
     findings = classify_findings(panels_data, metric_meta)
 
-    # System summaries (the 4 high-level cards walking through the timeline)
+    # Per-crew personal report cards (primary view)
     panel_labels = {pk: info["label"] + f" ({info['source']})" for pk, info in PANEL_SOURCES.items()}
+    crew_summaries = build_crew_summaries(panels_data, metric_meta, panel_labels)
+    print(f"\nGenerated {len(crew_summaries)} personal recovery cards:")
+    for c in crew_summaries:
+        print(f"  {c['crew_id']}: [{c['overall_status']}] {c['overall_text']}")
+        for sys in c["systems"]:
+            print(f"      {sys['label']}: [{sys['current_status']}] {sys['current_text']}")
+
+    # System summaries (auxiliary aggregated view, retained)
     system_summaries = build_system_summaries(panels_data, metric_meta, panel_labels)
-    print(f"\nGenerated {len(system_summaries)} system summary cards:")
-    for s in system_summaries:
-        print(f"  - [{s['overall_status']}] {s['label']} ({s['n_metrics_tracked']} metrics)")
-        for f in s["findings"]:
-            print(f"      [{f['checkpoint']}] {f['headline']}")
 
     payload = {
         "crew": sorted(VALID_CREW),
@@ -881,6 +1039,7 @@ def main() -> None:
         "systems": SYSTEMS,
         "findings": findings,
         "system_summaries": system_summaries,
+        "crew_summaries": crew_summaries,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(payload, indent=2))
