@@ -12,8 +12,8 @@
 // =============================================================
 
 const DATA_DIR = "./data";
-const MICROBIOME_URL = `${DATA_DIR}/fixture-microbiome.json`;
-const CBC_URL = `${DATA_DIR}/fixture-cbc.json`;
+const MICROBIOME_URL = `${DATA_DIR}/microbiome.json`;
+const CBC_URL = `${DATA_DIR}/cbc.json`;
 const OPPORTUNISTS_URL = `${DATA_DIR}/opportunists.json`;
 const BENEFICIALS_URL = `${DATA_DIR}/beneficials.json`;
 const BODY_SVG_URL = "./body.svg";

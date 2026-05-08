@@ -1,0 +1,13 @@
+# Raw OSDR downloads (auto-fetched by analysis pipelines, public data)
+data/raw/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# OS / editor cruft
+.DS_Store
+.idea/
+.vscode/
+*.swp
