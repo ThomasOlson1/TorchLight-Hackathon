@@ -860,20 +860,20 @@ const HERO_RADIANS_PER_FRAME = (HERO_SPIN_RPM * 2 * Math.PI) / 60 / 60;
 // fractions stay conservative so they sit ON the body / helmet front,
 // not at bbox extremes (where the helmet apex or backpack hump are).
 const HERO_HOTSPOT_FRACTIONS = {
-  // Visor / face area on the helmet front. y=0.62 is below the helmet apex
-  // (~0.95) but above the neck (~0.45), z=0.42 is on the visor not behind it.
-  glabella:       { x:  0.00, y:  0.66, z:  0.42 },
-  nasal:          { x:  0.00, y:  0.60, z:  0.46 },
-  oral:           { x:  0.00, y:  0.54, z:  0.46 },
-  post_auricular: { x: -0.32, y:  0.60, z:  0.06 },
-  occiput:        { x:  0.00, y:  0.62, z: -0.36 },
-  // Body - shoulders/chest at y~0.30, mid-body at y~0.00.
-  axillary:       { x: -0.38, y:  0.30, z:  0.05 },
-  forearm:        { x: -0.42, y:  0.02, z:  0.05 },
-  umbilicus:      { x:  0.00, y:  0.04, z:  0.40 },
-  gluteal:        { x:  0.00, y: -0.18, z: -0.36 },
-  // Boots at the very bottom; offset slightly to one foot.
-  toe_web:        { x: -0.18, y: -0.86, z:  0.22 },
+  // Hotspots sit slightly OUTSIDE the body surface so they read as
+  // floating markers, not embedded specks. For a model whose bbox spans
+  // [-1, +1] each axis, anything inside ~|0.4| can disappear into the
+  // mesh, so we push to ~0.55-0.65 on the relevant axis.
+  glabella:       { x:  0.00, y:  0.66, z:  0.62 },
+  nasal:          { x:  0.00, y:  0.60, z:  0.64 },
+  oral:           { x:  0.00, y:  0.54, z:  0.64 },
+  post_auricular: { x: -0.50, y:  0.60, z:  0.10 },
+  occiput:        { x:  0.00, y:  0.62, z: -0.55 },
+  axillary:       { x: -0.55, y:  0.30, z:  0.18 },
+  forearm:        { x: -0.62, y:  0.02, z:  0.18 },
+  umbilicus:      { x:  0.00, y:  0.04, z:  0.58 },
+  gluteal:        { x:  0.00, y: -0.18, z: -0.55 },
+  toe_web:        { x: -0.20, y: -0.88, z:  0.45 },
 };
 
 // Shared loader (cached so the model only fetches once).
@@ -954,7 +954,7 @@ async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSi
   camera.lookAt(0, 0, 0);
 
   // Hotspot radius scales with model height so it reads proportionally.
-  const hotspotRadius = size.y * 0.025;
+  const hotspotRadius = size.y * 0.035;
 
   const hotspots = new Map();
   const hotspotGeom = new THREE.SphereGeometry(hotspotRadius, 22, 16);
