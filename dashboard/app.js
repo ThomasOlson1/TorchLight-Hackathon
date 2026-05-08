@@ -864,11 +864,11 @@ const HERO_HOTSPOT_FRACTIONS = {
   // floating markers, not embedded specks. For a model whose bbox spans
   // [-1, +1] each axis, anything inside ~|0.4| can disappear into the
   // mesh, so we push to ~0.55-0.65 on the relevant axis.
-  glabella:       { x:  0.00, y:  0.66, z:  0.62 },
-  nasal:          { x:  0.00, y:  0.60, z:  0.64 },
-  oral:           { x:  0.00, y:  0.54, z:  0.64 },
-  post_auricular: { x: -0.50, y:  0.60, z:  0.10 },
-  occiput:        { x:  0.00, y:  0.62, z: -0.55 },
+  glabella:       { x:  0.00, y:  0.74, z:  0.72 },
+  nasal:          { x:  0.00, y:  0.68, z:  0.72 },
+  oral:           { x:  0.00, y:  0.62, z:  0.72 },
+  post_auricular: { x: -0.55, y:  0.72, z:  0.12 },
+  occiput:        { x:  0.00, y:  0.72, z: -0.62 },
   axillary:       { x: -0.55, y:  0.30, z:  0.18 },
   forearm:        { x: -0.62, y:  0.02, z:  0.18 },
   umbilicus:      { x:  0.00, y:  0.04, z:  0.58 },
