@@ -146,8 +146,12 @@ class Avatar3D {
     this.camera.position.set(0, 1.0, 4.6);
     this.camera.lookAt(0, 1.0, 0);
 
+    // Permissive WebGL options. If context creation throws, the caller
+    // (mountAvatars) will catch it and fall back to a 2D SVG body.
     this.renderer = new THREE.WebGLRenderer({
-      canvas, alpha: true, antialias: true, powerPreference: "low-power",
+      canvas, alpha: true, antialias: false,
+      failIfMajorPerformanceCaveat: false,
+      preserveDrawingBuffer: false,
     });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.setSize(w, h, false);
@@ -404,9 +408,105 @@ function mountAvatars() {
   document.querySelectorAll("figure[data-crew] .avatar-canvas").forEach(canvas => {
     const fig = canvas.closest("figure[data-crew]");
     const crew = fig.dataset.crew;
-    const av = new Avatar3D(canvas, crew);
-    avatars.set(crew, av);
+    try {
+      const av = new Avatar3D(canvas, crew);
+      avatars.set(crew, av);
+    } catch (err) {
+      console.warn(`[${crew}] WebGL avatar failed, falling back to 2D SVG:`, err);
+      const av = new Avatar2D(canvas, crew);
+      avatars.set(crew, av);
+    }
   });
+}
+
+// =============================================================
+// 2D SVG fallback (when WebGL context creation fails)
+// =============================================================
+
+const AVATAR_SVG_TEMPLATE = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 260" preserveAspectRatio="xMidYMid meet" class="body-svg">
+  <defs>
+    <pattern id="no-data-pattern-{ID}" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(45)">
+      <rect width="6" height="6" fill="#f0eada"/>
+      <line x1="0" y1="0" x2="0" y2="6" stroke="#cdcdcd" stroke-width="2"/>
+    </pattern>
+  </defs>
+  <g class="figure" data-view="front" transform="translate(0,0)">
+    <circle class="body-fill" cx="55" cy="28" r="16"/>
+    <rect class="body-fill" x="51" y="42" width="8" height="6"/>
+    <path class="body-fill" d="M 36 48 Q 55 45 74 48 L 70 116 Q 55 120 40 116 Z"/>
+    <path class="body-fill" d="M 36 50 L 22 105 Q 22 116 30 116 L 36 106 Q 40 80 42 54 Z"/>
+    <path class="body-fill" d="M 74 50 L 88 105 Q 88 116 80 116 L 74 106 Q 70 80 68 54 Z"/>
+    <path class="body-fill" d="M 40 116 L 35 218 Q 35 232 44 232 L 53 218 Q 54 165 53 116 Z"/>
+    <path class="body-fill" d="M 70 116 L 75 218 Q 75 232 66 232 L 57 218 Q 56 165 57 116 Z"/>
+    <ellipse class="body-fill" cx="40" cy="234" rx="8" ry="3"/>
+    <ellipse class="body-fill" cx="70" cy="234" rx="8" ry="3"/>
+    <text class="figure-label" x="55" y="252" text-anchor="middle">front</text>
+    <circle class="region" data-region="glabella"  cx="55" cy="20" r="3"/>
+    <circle class="region" data-region="nasal"     cx="55" cy="29" r="3"/>
+    <circle class="region" data-region="oral"      cx="55" cy="38" r="3"/>
+    <circle class="region" data-region="axillary"  cx="36" cy="55" r="4.5"/>
+    <circle class="region" data-region="forearm"   cx="26" cy="92" r="4.5"/>
+    <circle class="region" data-region="umbilicus" cx="55" cy="90" r="3.5"/>
+    <circle class="region" data-region="toe_web"   cx="40" cy="232" r="3.5"/>
+  </g>
+  <g class="figure" data-view="back" transform="translate(110,0)">
+    <circle class="body-fill" cx="55" cy="28" r="16"/>
+    <rect class="body-fill" x="51" y="42" width="8" height="6"/>
+    <path class="body-fill" d="M 36 48 Q 55 45 74 48 L 70 116 Q 55 120 40 116 Z"/>
+    <path class="body-fill" d="M 36 50 L 22 105 Q 22 116 30 116 L 36 106 Q 40 80 42 54 Z"/>
+    <path class="body-fill" d="M 74 50 L 88 105 Q 88 116 80 116 L 74 106 Q 70 80 68 54 Z"/>
+    <path class="body-fill" d="M 40 116 L 35 218 Q 35 232 44 232 L 53 218 Q 54 165 53 116 Z"/>
+    <path class="body-fill" d="M 70 116 L 75 218 Q 75 232 66 232 L 57 218 Q 56 165 57 116 Z"/>
+    <ellipse class="body-fill" cx="40" cy="234" rx="8" ry="3"/>
+    <ellipse class="body-fill" cx="70" cy="234" rx="8" ry="3"/>
+    <text class="figure-label" x="55" y="252" text-anchor="middle">back</text>
+    <circle class="region" data-region="occiput"        cx="55" cy="22" r="4"/>
+    <circle class="region" data-region="post_auricular" cx="42" cy="32" r="3"/>
+    <circle class="region" data-region="gluteal"        cx="55" cy="125" r="5"/>
+  </g>
+</svg>
+`;
+
+class Avatar2D {
+  constructor(canvas, crewId) {
+    this.crewId = crewId;
+    // Replace the canvas with an inline SVG body (canvas is no longer needed).
+    const host = canvas.parentElement;
+    canvas.remove();
+    host.innerHTML = AVATAR_SVG_TEMPLATE.replace(/\{ID\}/g, crewId);
+    this.svg = host.querySelector("svg");
+    this.regions = new Map();
+    this.svg.querySelectorAll("[data-region]").forEach(node => {
+      this.regions.set(node.dataset.region, node);
+      node.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openDrilldown(crewId, node.dataset.region);
+        selectCrew(crewId);
+      });
+    });
+  }
+
+  setScores(scoresForCrew, timepoint) {
+    for (const [site, node] of this.regions) {
+      const cell = (scoresForCrew[site] || {})[timepoint];
+      let title = node.querySelector("title");
+      if (!title) {
+        title = document.createElementNS("http://www.w3.org/2000/svg", "title");
+        node.appendChild(title);
+      }
+      if (!cell) {
+        node.setAttribute("data-no-data", "true");
+        node.style.fill = "";
+        title.textContent = `${labelForSite(site)} · ${timepoint}: no swab collected`;
+      } else {
+        node.removeAttribute("data-no-data");
+        node.style.fill = colorForScore(cell.d, cell.within_baseline_noise);
+        const noiseTag = cell.within_baseline_noise ? " (within baseline noise)" : "";
+        title.textContent = `${labelForSite(site)} · ${timepoint}\nd = ${cell.d.toFixed(2)} [95% CI ${cell.ci_lo.toFixed(2)}–${cell.ci_hi.toFixed(2)}], n=${cell.n_baseline}${noiseTag}`;
+      }
+    }
+  }
 }
 
 function repaintAll() {
