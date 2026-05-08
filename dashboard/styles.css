@@ -109,11 +109,11 @@ main {
    the spaceman never blocks text. On phones the spaceman is hidden. */
 
 :root {
-  --spaceman-w: 140px;
-  --spaceman-h: 170px;
-  --spaceman-top: 90px;   /* well clear of the sticky honesty strip */
-  --spaceman-left: 14px;
-  --spaceman-lane: calc(var(--spaceman-w) + var(--spaceman-left) + 12px);
+  --spaceman-w: 220px;
+  --spaceman-h: 270px;
+  --spaceman-top: 90px;   /* JS overrides this with the strip's measured height */
+  --spaceman-left: 16px;
+  --spaceman-lane: calc(var(--spaceman-w) + var(--spaceman-left) + 14px);
 }
 
 #corner-spaceman {

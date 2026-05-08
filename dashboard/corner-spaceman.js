@@ -7,7 +7,6 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const HOST_ID    = "corner-spaceman";
 const MODEL_URL  = "./assets/Astronaut.glb";
-const SIZE       = 150;        // px
 const SPIN_RPM   = 6;          // revolutions per minute
 const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
 
@@ -42,16 +41,26 @@ const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
     return;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.setSize(SIZE, SIZE, false);
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  // Tighter FOV + larger distance so the model fits head-to-feet in a
-  // square viewport with breathing room. Looking slightly higher than
-  // mid-body so the helmet has room above it.
+  // Tighter FOV + larger distance so the model fits head-to-feet with
+  // breathing room. Looking slightly higher than mid-body so the helmet
+  // has room above it.
   const camera = new THREE.PerspectiveCamera(26, 1, 0.05, 50);
   camera.position.set(0, 0.95, 4.6);
   camera.lookAt(0, 0.95, 0);
+
+  // Renderer + camera aspect track the host's actual size, not a constant.
+  function fitToHost() {
+    const w = Math.max(1, host.clientWidth  || 200);
+    const h = Math.max(1, host.clientHeight || 240);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  fitToHost();
+  window.addEventListener("resize", fitToHost);
 
   scene.add(new THREE.AmbientLight(0xfff5e0, 0.65));
   const key = new THREE.DirectionalLight(0xffffff, 1.0);
