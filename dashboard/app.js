@@ -615,21 +615,46 @@ function wireEvents() {
 // =============================================================
 
 document.addEventListener("DOMContentLoaded", async () => {
+  // Each step is isolated: one failing render shouldn't black out the whole page.
   try {
     const { microbiome, bloodwork, opportunists, beneficials, bodyDoc } = await loadAll();
     state.microbiome = microbiome;
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
-
-    mountAvatars(bodyDoc);
-    wireEvents();
-    repaintAll();
-    renderFindings();
-    renderRawBloodwork();
+    safe("mountAvatars",      () => mountAvatars(bodyDoc));
+    safe("wireEvents",        () => wireEvents());
+    safe("repaintAll",        () => repaintAll());
+    safe("renderFindings",    () => renderFindings());
+    safe("renderRawBloodwork", () => renderRawBloodwork());
   } catch (err) {
-    console.error("Dashboard failed to load:", err);
+    console.error("Dashboard fatal load error:", err);
     document.getElementById("findings-list").innerHTML =
-      `<p style="color: #b00; padding: 12px;">Failed to load data. Check the console.</p>`;
+      `<p style="color: #b00; padding: 12px;">Failed to load data: <code>${escapeHtml(String(err.message || err))}</code><br>Open DevTools console for full stack.</p>`;
   }
 });
+
+function safe(label, fn) {
+  try { fn(); }
+  catch (err) {
+    console.error(`[${label}] threw:`, err);
+    // Surface the error inline if a known anchor element exists for that section.
+    const anchors = {
+      mountAvatars:      "avatar-grid",
+      renderFindings:    "findings-list",
+      renderRawBloodwork: "cbc-plots",
+    };
+    const id = anchors[label];
+    if (id) {
+      const el = document.getElementById(id);
+      if (el) {
+        const note = document.createElement("p");
+        note.style.color = "#b00";
+        note.style.padding = "8px 12px";
+        note.style.font = "12px ui-monospace, monospace";
+        note.textContent = `[${label}] ${err.message || err}`;
+        el.appendChild(note);
+      }
+    }
+  }
+}
