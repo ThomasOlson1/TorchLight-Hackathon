@@ -462,7 +462,6 @@ function buildBloodworkXY(perCrew, crew) {
 
 function renderPanelPlots(panel, grid, panelKey) {
   for (const [mk, m] of Object.entries(panel.metrics)) {
-    const plotId = `plot-${panelKey}-${mk}`;
     const card = document.createElement("div");
     card.className = "cbc-metric";
     card.innerHTML = `
@@ -470,9 +469,10 @@ function renderPanelPlots(panel, grid, panelKey) {
         <span>${escapeHtml(m.label || mk)}</span>
         <span class="units">${escapeHtml(m.units || "")}</span>
       </div>
-      <div class="cbc-plot" id="${plotId}"></div>
+      <div class="cbc-plot"></div>
     `;
     grid.appendChild(card);
+    const plotEl = card.querySelector(".cbc-plot");
 
     const traces = [];
     for (const crew of state.bloodwork.crew) {
@@ -525,7 +525,7 @@ function renderPanelPlots(panel, grid, panelKey) {
       }] : [],
       hovermode: "x unified",
     };
-    Plotly.newPlot(plotId, traces, layout, { displayModeBar: false, responsive: true });
+    Plotly.newPlot(plotEl, traces, layout, { displayModeBar: false, responsive: true });
   }
 }
 
@@ -561,6 +561,16 @@ function renderRawBloodwork() {
     grid.className = "raw-plot-grid";
     if (isHuge) {
       header.appendChild(grid);
+    } else {
+      section.appendChild(grid);
+    }
+
+    // CRITICAL: attach to DOM BEFORE rendering Plotly, since Plotly.newPlot
+    // resolves the target by document.getElementById and a detached subtree
+    // won't be found.
+    root.appendChild(section);
+
+    if (isHuge) {
       header.addEventListener("toggle", () => {
         if (header.open && !grid.dataset.rendered) {
           renderPanelPlots(panel, grid, panelKey);
@@ -568,10 +578,8 @@ function renderRawBloodwork() {
         }
       });
     } else {
-      section.appendChild(grid);
       renderPanelPlots(panel, grid, panelKey);
     }
-    root.appendChild(section);
   }
 }
 
