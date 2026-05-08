@@ -851,22 +851,29 @@ const HERO_SPIN_RPM = 4;
 const HERO_RADIANS_PER_FRAME = (HERO_SPIN_RPM * 2 * Math.PI) / 60 / 60;
 
 // Hotspot positions as FRACTIONS of the model's actual bounding box.
-// y: -1 is feet, +1 is top of head; 0 is vertical center.
-// x: -1 is left side, +1 is right side; 0 is centerline.
+// y: -1 is bottom (boots), +1 is top (helmet apex); 0 is vertical center.
+// x: -1 is left, +1 is right; 0 is centerline.
 // z: -1 is back, +1 is front (model assumed to face +z).
-// We resolve these to world coords after loading the model so hotspots
-// land on real anatomy regardless of the model's actual scale.
+//
+// Calibrated for the Google astronaut model where the bbox includes the
+// helmet top and backpack rear, which inflates the bbox extents. Hotspot
+// fractions stay conservative so they sit ON the body / helmet front,
+// not at bbox extremes (where the helmet apex or backpack hump are).
 const HERO_HOTSPOT_FRACTIONS = {
-  glabella:       { x:  0.00, y:  0.92, z:  0.55 },
-  nasal:          { x:  0.00, y:  0.85, z:  0.65 },
-  oral:           { x:  0.00, y:  0.78, z:  0.65 },
-  post_auricular: { x: -0.55, y:  0.88, z:  0.05 },
-  occiput:        { x:  0.00, y:  0.92, z: -0.55 },
-  axillary:       { x: -0.55, y:  0.30, z:  0.05 },
-  forearm:        { x: -1.05, y: -0.05, z:  0.05 },
-  umbilicus:      { x:  0.00, y:  0.05, z:  0.55 },
-  gluteal:        { x:  0.00, y: -0.20, z: -0.55 },
-  toe_web:        { x: -0.20, y: -0.95, z:  0.50 },
+  // Visor / face area on the helmet front. y=0.62 is below the helmet apex
+  // (~0.95) but above the neck (~0.45), z=0.42 is on the visor not behind it.
+  glabella:       { x:  0.00, y:  0.66, z:  0.42 },
+  nasal:          { x:  0.00, y:  0.60, z:  0.46 },
+  oral:           { x:  0.00, y:  0.54, z:  0.46 },
+  post_auricular: { x: -0.32, y:  0.60, z:  0.06 },
+  occiput:        { x:  0.00, y:  0.62, z: -0.36 },
+  // Body - shoulders/chest at y~0.30, mid-body at y~0.00.
+  axillary:       { x: -0.38, y:  0.30, z:  0.05 },
+  forearm:        { x: -0.42, y:  0.02, z:  0.05 },
+  umbilicus:      { x:  0.00, y:  0.04, z:  0.40 },
+  gluteal:        { x:  0.00, y: -0.18, z: -0.36 },
+  // Boots at the very bottom; offset slightly to one foot.
+  toe_web:        { x: -0.18, y: -0.86, z:  0.22 },
 };
 
 // Shared loader (cached so the model only fetches once).
@@ -951,16 +958,20 @@ async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSi
 
   const hotspots = new Map();
   const hotspotGeom = new THREE.SphereGeometry(hotspotRadius, 22, 16);
+  const debugPositions = {};
   for (const [site, frac] of Object.entries(HERO_HOTSPOT_FRACTIONS)) {
     const mat = new THREE.MeshStandardMaterial({
       color: 0xececec, roughness: 0.35, metalness: 0.0, emissive: 0x000000,
     });
     const mesh = new THREE.Mesh(hotspotGeom, mat);
-    mesh.position.set(frac.x * halfW, frac.y * halfH, frac.z * halfD);
+    const x = frac.x * halfW, y = frac.y * halfH, z = frac.z * halfD;
+    mesh.position.set(x, y, z);
     mesh.userData.site = site;
     pivot.add(mesh);
     hotspots.set(site, mesh);
+    debugPositions[site] = { x: +x.toFixed(3), y: +y.toFixed(3), z: +z.toFixed(3) };
   }
+  console.log("[hero body] hotspot world positions:", debugPositions);
 
   function fitToHost() {
     const w = Math.max(1, host.clientWidth  || 480);
