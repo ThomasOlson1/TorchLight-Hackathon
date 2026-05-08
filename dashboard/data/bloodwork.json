@@ -24083,5 +24083,227 @@
         }
       ]
     }
+  ],
+  "system_summaries": [
+    {
+      "id": "hematology",
+      "label": "Hematology",
+      "subtitle": "Red cells, white cells, platelets",
+      "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+      "overall_status": "trended_down",
+      "n_metrics_tracked": 19,
+      "findings": [
+        {
+          "checkpoint": "L-3",
+          "checkpoint_label": "Pre-flight baseline",
+          "headline": "Personal baseline established from 3 pre-flight draws (L-92, L-44, L-3) across 19 hematology metrics.",
+          "detail": "Each crew member's own L-92/L-44/L-3 mean defines their baseline. 223 measurements ground the post-flight comparisons. All baselines are personal (per-crew), not pooled."
+        },
+        {
+          "checkpoint": "R+1",
+          "checkpoint_label": "1 day post-return",
+          "headline": "1 day post-return (R+1): decreased. Red cell mass (hemoglobin / RBC / hematocrit) averaged -0.5% vs baseline.",
+          "detail": "24 of 75 crew x metric values dropped below each crew's personal baseline CI.",
+          "n_shifted": 37,
+          "n_total": 75,
+          "n_up": 13,
+          "n_down": 24,
+          "n_stable": 38,
+          "headline_pct": -0.5
+        },
+        {
+          "checkpoint": "R+45",
+          "checkpoint_label": "6 weeks post-return",
+          "headline": "6 weeks post-return (R+45): mixed. Red cell mass (hemoglobin / RBC / hematocrit) averaged +1.4% vs baseline.",
+          "detail": "18 crew x metric values rose, 16 dropped (mixed picture across the panel).",
+          "n_shifted": 34,
+          "n_total": 75,
+          "n_up": 18,
+          "n_down": 16,
+          "n_stable": 41,
+          "headline_pct": 1.4
+        },
+        {
+          "checkpoint": "R+82",
+          "checkpoint_label": "12 weeks+ post-return",
+          "headline": "12 weeks+ post-return (R+82 / R+194): mixed. Red cell mass (hemoglobin / RBC / hematocrit) averaged +0.1% vs baseline.",
+          "detail": "38 crew x metric values rose, 48 dropped (mixed picture across the panel).",
+          "n_shifted": 86,
+          "n_total": 149,
+          "n_up": 38,
+          "n_down": 48,
+          "n_stable": 63,
+          "headline_pct": 0.1
+        }
+      ],
+      "sources": [
+        "Complete Blood Count (OSD-569)"
+      ]
+    },
+    {
+      "id": "metabolic",
+      "label": "Kidneys, liver & metabolism",
+      "subtitle": "BUN, creatinine, AST, ALT, glucose, electrolytes",
+      "headline_label": "Kidney markers (BUN, creatinine)",
+      "overall_status": "trended_down",
+      "n_metrics_tracked": 17,
+      "findings": [
+        {
+          "checkpoint": "L-3",
+          "checkpoint_label": "Pre-flight baseline",
+          "headline": "Personal baseline established from 3 pre-flight draws (L-92, L-44, L-3) across 17 kidneys, liver & metabolism metrics.",
+          "detail": "Each crew member's own L-92/L-44/L-3 mean defines their baseline. 194 measurements ground the post-flight comparisons. All baselines are personal (per-crew), not pooled."
+        },
+        {
+          "checkpoint": "R+1",
+          "checkpoint_label": "1 day post-return",
+          "headline": "1 day post-return (R+1): mixed. Kidney markers (BUN, creatinine) averaged +3.7% vs baseline.",
+          "detail": "18 crew x metric values rose, 15 dropped (mixed picture across the panel).",
+          "n_shifted": 33,
+          "n_total": 64,
+          "n_up": 18,
+          "n_down": 15,
+          "n_stable": 31,
+          "headline_pct": 3.7
+        },
+        {
+          "checkpoint": "R+45",
+          "checkpoint_label": "6 weeks post-return",
+          "headline": "6 weeks post-return (R+45): decreased. Kidney markers (BUN, creatinine) averaged -2.5% vs baseline.",
+          "detail": "26 of 63 crew x metric values dropped below each crew's personal baseline CI.",
+          "n_shifted": 39,
+          "n_total": 63,
+          "n_up": 13,
+          "n_down": 26,
+          "n_stable": 24,
+          "headline_pct": -2.5
+        },
+        {
+          "checkpoint": "R+82",
+          "checkpoint_label": "12 weeks+ post-return",
+          "headline": "12 weeks+ post-return (R+82 / R+194): mixed. Kidney markers (BUN, creatinine) averaged +8.4% vs baseline.",
+          "detail": "31 crew x metric values rose, 28 dropped (mixed picture across the panel).",
+          "n_shifted": 59,
+          "n_total": 130,
+          "n_up": 31,
+          "n_down": 28,
+          "n_stable": 71,
+          "headline_pct": 8.4
+        }
+      ],
+      "sources": [
+        "Comprehensive Metabolic Panel (OSD-575)"
+      ]
+    },
+    {
+      "id": "immune",
+      "label": "Immune signaling",
+      "subtitle": "Cytokines from the Eve immune panel",
+      "headline_label": "Pro-inflammatory + adaptive cytokines",
+      "overall_status": "trended_up",
+      "n_metrics_tracked": 17,
+      "findings": [
+        {
+          "checkpoint": "L-3",
+          "checkpoint_label": "Pre-flight baseline",
+          "headline": "Personal baseline established from 3 pre-flight draws (L-92, L-44, L-3) across 17 immune signaling metrics.",
+          "detail": "Each crew member's own L-92/L-44/L-3 mean defines their baseline. 204 measurements ground the post-flight comparisons. All baselines are personal (per-crew), not pooled."
+        },
+        {
+          "checkpoint": "R+1",
+          "checkpoint_label": "1 day post-return",
+          "headline": "1 day post-return (R+1): elevated. Pro-inflammatory + adaptive cytokines averaged +48.2% vs baseline.",
+          "detail": "19 of 68 crew x metric values rose above each crew's personal baseline CI.",
+          "n_shifted": 24,
+          "n_total": 68,
+          "n_up": 19,
+          "n_down": 5,
+          "n_stable": 44,
+          "headline_pct": 48.2
+        },
+        {
+          "checkpoint": "R+45",
+          "checkpoint_label": "6 weeks post-return",
+          "headline": "6 weeks post-return (R+45): mixed. Pro-inflammatory + adaptive cytokines averaged +30.1% vs baseline.",
+          "detail": "15 crew x metric values rose, 20 dropped (mixed picture across the panel).",
+          "n_shifted": 35,
+          "n_total": 68,
+          "n_up": 15,
+          "n_down": 20,
+          "n_stable": 33,
+          "headline_pct": 30.1
+        },
+        {
+          "checkpoint": "R+82",
+          "checkpoint_label": "12 weeks+ post-return",
+          "headline": "12 weeks+ post-return (R+82 / R+194): mixed. Pro-inflammatory + adaptive cytokines averaged +19.5% vs baseline.",
+          "detail": "39 crew x metric values rose, 39 dropped (mixed picture across the panel).",
+          "n_shifted": 78,
+          "n_total": 136,
+          "n_up": 39,
+          "n_down": 39,
+          "n_stable": 58,
+          "headline_pct": 19.5
+        }
+      ],
+      "sources": [
+        "Serum immune cytokines (Eve panel) (OSD-575)"
+      ]
+    },
+    {
+      "id": "cardiovascular",
+      "label": "Cardiovascular markers",
+      "subtitle": "Acute-phase + cardiac signals",
+      "headline_label": "C-reactive protein (CRP) + fibrinogen",
+      "overall_status": "trended_up",
+      "n_metrics_tracked": 9,
+      "findings": [
+        {
+          "checkpoint": "L-3",
+          "checkpoint_label": "Pre-flight baseline",
+          "headline": "Personal baseline established from 3 pre-flight draws (L-92, L-44, L-3) across 9 cardiovascular markers metrics.",
+          "detail": "Each crew member's own L-92/L-44/L-3 mean defines their baseline. 108 measurements ground the post-flight comparisons. All baselines are personal (per-crew), not pooled."
+        },
+        {
+          "checkpoint": "R+1",
+          "checkpoint_label": "1 day post-return",
+          "headline": "1 day post-return (R+1): mixed. C-reactive protein (CRP) + fibrinogen averaged +13.8% vs baseline.",
+          "detail": "4 crew x metric values rose, 4 dropped (mixed picture across the panel).",
+          "n_shifted": 8,
+          "n_total": 36,
+          "n_up": 4,
+          "n_down": 4,
+          "n_stable": 28,
+          "headline_pct": 13.8
+        },
+        {
+          "checkpoint": "R+45",
+          "checkpoint_label": "6 weeks post-return",
+          "headline": "6 weeks post-return (R+45): stable. C-reactive protein (CRP) + fibrinogen averaged -7.8% vs baseline.",
+          "detail": "Most metrics within each crew's personal pre-flight CI.",
+          "n_shifted": 7,
+          "n_total": 36,
+          "n_up": 6,
+          "n_down": 1,
+          "n_stable": 29,
+          "headline_pct": -7.8
+        },
+        {
+          "checkpoint": "R+82",
+          "checkpoint_label": "12 weeks+ post-return",
+          "headline": "12 weeks+ post-return (R+82 / R+194): elevated. C-reactive protein (CRP) + fibrinogen averaged +30.4% vs baseline.",
+          "detail": "26 of 72 crew x metric values rose above each crew's personal baseline CI.",
+          "n_shifted": 30,
+          "n_total": 72,
+          "n_up": 26,
+          "n_down": 4,
+          "n_stable": 42,
+          "headline_pct": 30.4
+        }
+      ],
+      "sources": [
+        "Serum cardiovascular markers (Eve panel) (OSD-575)"
+      ]
+    }
   ]
 }

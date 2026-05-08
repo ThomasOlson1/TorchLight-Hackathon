@@ -126,7 +126,150 @@ section.panel .panel-subtitle {
   font-size: 14px;
 }
 
-/* ---------- Findings (report-first cards) ---------- */
+/* ---------- System summary grid (4 high-level cards) ---------- */
+
+#summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 6px;
+}
+
+.summary-card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-top: 4px solid #b0b8c2;
+  border-radius: var(--radius);
+  padding: 16px 18px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-card.status-trended_up   { border-top-color: #d94a1f; }
+.summary-card.status-trended_down { border-top-color: #2956a8; }
+.summary-card.status-mixed        { border-top-color: #b08000; }
+.summary-card.status-stable       { border-top-color: #6b9e6e; }
+.summary-card.status-no_data      { border-top-color: #c8c8c8; }
+
+.summary-card-header { margin-bottom: 8px; }
+
+.summary-card-title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 2px;
+}
+
+.summary-card-title h3 {
+  margin: 0;
+  font-size: 17px;
+  letter-spacing: -0.005em;
+}
+
+.summary-icon {
+  font-size: 16px;
+  width: 18px;
+  text-align: center;
+  display: inline-block;
+}
+
+.summary-card.status-trended_up   .summary-icon { color: #d94a1f; }
+.summary-card.status-trended_down .summary-icon { color: #2956a8; }
+.summary-card.status-mixed        .summary-icon { color: #b08000; }
+.summary-card.status-stable       .summary-icon { color: #4a7d4d; }
+
+.summary-card-subtitle {
+  margin: 0 0 2px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.summary-card-status {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.summary-timeline {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.summary-finding {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 10px;
+  background: #fbfcfd;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.summary-finding-cp {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cp-tag {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #eef1f5;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.pct-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 3px;
+  border: 1px solid;
+}
+.pct-badge.up    { color: #b3320f; background: #fff1ea; border-color: #f5b893; }
+.pct-badge.down  { color: #1c4d99; background: #eaf1fb; border-color: #b6cdec; }
+.pct-badge.muted { color: var(--text-muted); background: #f4f5f7; border-color: var(--border); }
+
+.summary-finding-body { font-size: 13px; line-height: 1.45; }
+
+.summary-finding-headline {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.summary-finding-detail {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.summary-card-sources {
+  margin: 14px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.summary-card-sources strong { color: var(--text); }
+
+@media (max-width: 1000px) {
+  #summary-grid { grid-template-columns: 1fr; }
+}
+
+/* ---------- Findings (per-system detail cards, secondary view) ---------- */
 
 #findings-list .finding-category {
   margin: 16px 0 24px;

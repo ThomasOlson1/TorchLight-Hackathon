@@ -580,6 +580,215 @@ def classify_findings(
     return findings
 
 
+# ---------- System summaries (4 high-level cards x 4 timeline findings) ----------
+
+# Curated: each high-level "stat card" maps to one or more underlying systems,
+# picks 1-3 headline metrics that best represent the category, and walks through
+# 4 mission checkpoints. The headlines drive the per-checkpoint finding text;
+# all metrics in the systems contribute to the "n_shifted" counts.
+SUMMARY_CARDS = [
+    {
+        "id": "hematology",
+        "label": "Hematology",
+        "subtitle": "Red cells, white cells, platelets",
+        "systems": ["red_cells", "white_cells", "platelets"],
+        "headline": [("cbc", "hemoglobin"), ("cbc", "rbc"), ("cbc", "hematocrit")],
+        "headline_label": "Red cell mass (hemoglobin / RBC / hematocrit)",
+    },
+    {
+        "id": "metabolic",
+        "label": "Kidneys, liver & metabolism",
+        "subtitle": "BUN, creatinine, AST, ALT, glucose, electrolytes",
+        "systems": ["renal", "hepatic", "metabolic", "protein"],
+        "headline": [("cmp", "creatinine"), ("cmp", "urea_nitrogen_bun")],
+        "headline_label": "Kidney markers (BUN, creatinine)",
+    },
+    {
+        "id": "immune",
+        "label": "Immune signaling",
+        "subtitle": "Cytokines from the Eve immune panel",
+        "systems": ["inflammation", "adaptive"],
+        "headline": [("immune_cytokines", "il_6"), ("immune_cytokines", "il_2"), ("immune_cytokines", "il_10")],
+        "headline_label": "Pro-inflammatory + adaptive cytokines",
+    },
+    {
+        "id": "cardiovascular",
+        "label": "Cardiovascular markers",
+        "subtitle": "Acute-phase + cardiac signals",
+        "systems": ["cardiac"],
+        "headline": [("cardiac_cytokines", "crp"), ("cardiac_cytokines", "fibrinogen")],
+        "headline_label": "C-reactive protein (CRP) + fibrinogen",
+    },
+]
+
+# 4 mission checkpoints in narrative order. Each gets a finding bullet on every card.
+TIMELINE_CHECKPOINTS = [
+    {"key": "L-3",  "label": "Pre-flight baseline",  "tps": ["L-92", "L-44", "L-3"]},
+    {"key": "R+1",  "label": "1 day post-return",    "tps": ["R+1"]},
+    {"key": "R+45", "label": "6 weeks post-return",  "tps": ["R+45"]},
+    {"key": "R+82", "label": "12 weeks+ post-return", "tps": ["R+82", "R+194"]},
+]
+
+
+def aggregate_system_metrics(panels_data, metric_meta, system_ids):
+    """Return list of (panel, key) tuples for all metrics in the named systems."""
+    metrics = []
+    for (panel, mk), meta in metric_meta.items():
+        if meta.get("system") in system_ids:
+            metrics.append((panel, mk))
+    return metrics
+
+
+def crew_shift_summary(panels_data, metrics, tp_list):
+    """Across all metrics & all timepoints in tp_list, count crew-x-metric shifts.
+
+    Returns: (n_total, n_up, n_down, n_stable, median_pct_change_among_shifted).
+    """
+    n_total = 0
+    n_up = 0
+    n_down = 0
+    n_stable = 0
+    pct_changes_shifted = []
+    for (panel, mk) in metrics:
+        per_crew = panels_data.get(panel, {}).get(mk, {})
+        for crew, cstats in per_crew.items():
+            for tp in tp_list:
+                shift = cstats.get("shifts", {}).get(tp)
+                if not shift:
+                    continue
+                n_total += 1
+                if shift["shifted"]:
+                    if shift["direction"] == "up":
+                        n_up += 1
+                    elif shift["direction"] == "down":
+                        n_down += 1
+                    pct_changes_shifted.append(shift["pct"])
+                else:
+                    n_stable += 1
+    median_pct = float(np.median(pct_changes_shifted)) if pct_changes_shifted else 0.0
+    return n_total, n_up, n_down, n_stable, median_pct
+
+
+def headline_pct_change(panels_data, headline_keys, tp_list):
+    """Average % change across headline metrics x crew x given timepoints.
+
+    Used to print the "<headline metric> averaged ±X% from baseline at <tp>" line.
+    """
+    pct_values = []
+    for (panel, mk) in headline_keys:
+        per_crew = panels_data.get(panel, {}).get(mk, {})
+        for crew, cstats in per_crew.items():
+            for tp in tp_list:
+                shift = cstats.get("shifts", {}).get(tp)
+                if shift is not None:
+                    pct_values.append(shift["pct"])
+    if not pct_values:
+        return None
+    return float(np.mean(pct_values))
+
+
+def build_system_summaries(panels_data, metric_meta, panel_labels) -> list[dict]:
+    """For each card, walk the 4 mission checkpoints and emit a finding for each."""
+    summaries = []
+
+    for card in SUMMARY_CARDS:
+        all_system_metrics = aggregate_system_metrics(panels_data, metric_meta, set(card["systems"]))
+        headline_metrics = card["headline"]
+
+        findings = []
+
+        # Checkpoint 0: Pre-flight baseline (L-92 / L-44 / L-3)
+        baseline_tps = ["L-92", "L-44", "L-3"]
+        n_metrics = len({mk for _p, mk in all_system_metrics})
+        n_baseline_obs = sum(
+            1 for (panel, mk) in all_system_metrics
+            for crew_stats in panels_data.get(panel, {}).get(mk, {}).values()
+            for tp in baseline_tps
+            if tp in crew_stats.get("values", {})
+        )
+        findings.append({
+            "checkpoint": "L-3",
+            "checkpoint_label": "Pre-flight baseline",
+            "headline": f"Personal baseline established from 3 pre-flight draws (L-92, L-44, L-3) across {n_metrics} {card['label'].lower()} metrics.",
+            "detail": f"Each crew member's own L-92/L-44/L-3 mean defines their baseline. {n_baseline_obs} measurements ground the post-flight comparisons. All baselines are personal (per-crew), not pooled.",
+        })
+
+        # Checkpoints 1-3: post-flight
+        for cp in TIMELINE_CHECKPOINTS[1:]:
+            n_total, n_up, n_down, n_stable, _med_shifted = crew_shift_summary(
+                panels_data, all_system_metrics, cp["tps"]
+            )
+            head_pct = headline_pct_change(panels_data, headline_metrics, cp["tps"])
+            n_shifted = n_up + n_down
+            shifted_frac = n_shifted / n_total if n_total else 0.0
+
+            # Direction call
+            if shifted_frac < 0.20:
+                direction_word = "stable"
+                shift_phrase = "Most metrics within each crew's personal pre-flight CI"
+            elif n_up > n_down * 1.5:
+                direction_word = "elevated"
+                shift_phrase = f"{n_up} of {n_total} crew x metric values rose above each crew's personal baseline CI"
+            elif n_down > n_up * 1.5:
+                direction_word = "decreased"
+                shift_phrase = f"{n_down} of {n_total} crew x metric values dropped below each crew's personal baseline CI"
+            else:
+                direction_word = "mixed"
+                shift_phrase = f"{n_up} crew x metric values rose, {n_down} dropped (mixed picture across the panel)"
+
+            head_text = ""
+            if head_pct is not None:
+                arrow = "+" if head_pct > 0 else ""
+                head_text = f" {card['headline_label']} averaged {arrow}{head_pct:.1f}% vs baseline."
+
+            checkpoint_label = cp["label"]
+            tps_phrase = " / ".join(cp["tps"]) if len(cp["tps"]) > 1 else cp["tps"][0]
+            findings.append({
+                "checkpoint": cp["key"],
+                "checkpoint_label": checkpoint_label,
+                "headline": f"{checkpoint_label} ({tps_phrase}): {direction_word}.{head_text}",
+                "detail": shift_phrase + ".",
+                "n_shifted": n_shifted,
+                "n_total": n_total,
+                "n_up": n_up,
+                "n_down": n_down,
+                "n_stable": n_stable,
+                "headline_pct": round(head_pct, 1) if head_pct is not None else None,
+            })
+
+        # Overall status across the post-flight window
+        post_flight_tps = ["R+1", "R+45", "R+82", "R+194"]
+        _t, n_up_all, n_down_all, n_stable_all, _ = crew_shift_summary(panels_data, all_system_metrics, post_flight_tps)
+        total_post = n_up_all + n_down_all + n_stable_all
+        if total_post == 0:
+            overall = "no_data"
+        elif (n_up_all + n_down_all) / total_post < 0.20:
+            overall = "stable"
+        elif n_down_all > n_up_all:
+            overall = "trended_down"
+        elif n_up_all > n_down_all:
+            overall = "trended_up"
+        else:
+            overall = "mixed"
+
+        # Source labels: each panel that contributed any metric
+        source_panels = sorted({p for (p, _mk) in all_system_metrics})
+        sources = [panel_labels.get(p, p) for p in source_panels]
+
+        summaries.append({
+            "id": card["id"],
+            "label": card["label"],
+            "subtitle": card["subtitle"],
+            "headline_label": card["headline_label"],
+            "overall_status": overall,
+            "n_metrics_tracked": n_metrics,
+            "findings": findings,
+            "sources": sources,
+        })
+
+    return summaries
+
+
 def main() -> None:
     print("Loading bloodwork sources...")
     rng = np.random.default_rng(0)
@@ -652,11 +861,17 @@ def main() -> None:
         }
         print(f"  metrics in panel: {len(per_metric_stats)}")
 
-    # Findings
+    # Findings (per-system, kept for the underlying detail)
     findings = classify_findings(panels_data, metric_meta)
-    print(f"\nGenerated {len(findings)} findings.")
-    for f in findings:
-        print(f"  - [{f['overall_status']}] {f['headline']}")
+
+    # System summaries (the 4 high-level cards walking through the timeline)
+    panel_labels = {pk: info["label"] + f" ({info['source']})" for pk, info in PANEL_SOURCES.items()}
+    system_summaries = build_system_summaries(panels_data, metric_meta, panel_labels)
+    print(f"\nGenerated {len(system_summaries)} system summary cards:")
+    for s in system_summaries:
+        print(f"  - [{s['overall_status']}] {s['label']} ({s['n_metrics_tracked']} metrics)")
+        for f in s["findings"]:
+            print(f"      [{f['checkpoint']}] {f['headline']}")
 
     payload = {
         "crew": sorted(VALID_CREW),
@@ -665,6 +880,7 @@ def main() -> None:
         "panels": panels_payload,
         "systems": SYSTEMS,
         "findings": findings,
+        "system_summaries": system_summaries,
     }
     OUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     OUT_PATH.write_text(json.dumps(payload, indent=2))

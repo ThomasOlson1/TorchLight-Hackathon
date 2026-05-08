@@ -25,14 +25,29 @@
     <section class="panel" id="bloodwork-report">
       <h2>What your blood tells us</h2>
       <p class="panel-subtitle">
-        Plain-language findings synthesized from <strong>four bloodwork sources</strong>: the
-        Complete Blood Count (OSD-569), Comprehensive Metabolic Panel, immune cytokine panel, and
-        cardiovascular marker panel (all OSD-575). Each card is a per-system summary across
-        the mission — click to expand the underlying metrics, per-crew shifts, and source citations.
+        Four high-level system snapshots across the mission timeline, synthesized from <strong>four bloodwork sources</strong>:
+        the Complete Blood Count (OSD-569), Comprehensive Metabolic Panel, immune cytokine panel, and
+        cardiovascular marker panel (all OSD-575). Each card walks the reader from each crew member's pre-flight
+        baseline (mean of L-92, L-44, L-3) through 1 day, 6 weeks, and 12+ weeks post-return.
       </p>
-      <div id="findings-list" aria-live="polite">
-        <p class="muted">Loading findings...</p>
+      <div id="summary-grid" aria-live="polite">
+        <p class="muted">Loading summary...</p>
       </div>
+    </section>
+
+    <section class="panel" id="findings-detail">
+      <details>
+        <summary>
+          <h2 style="display:inline">Per-system finding cards</h2>
+          <span class="muted" style="margin-left:8px">— click each to expand evidence</span>
+        </summary>
+        <p class="panel-subtitle">
+          More granular auto-generated findings, one per physiological system at each post-flight timepoint
+          where shifts were detected. Each card lists the underlying metrics that drove the call, with per-crew
+          shift counts.
+        </p>
+        <div id="findings-list" aria-live="polite"></div>
+      </details>
     </section>
 
     <section class="panel" id="cbc-panel">

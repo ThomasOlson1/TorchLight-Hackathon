@@ -322,7 +322,84 @@ function hexToRgba(hex, a) {
 }
 
 // =============================================================
-// Findings (report-first cards)
+// System summaries (4 high-level cards × 4 timeline checkpoints)
+// =============================================================
+
+const SUMMARY_STATUS_ICON = {
+  trended_up:   "▲",
+  trended_down: "▼",
+  mixed:        "◆",
+  stable:       "—",
+  no_data:      "·",
+};
+
+const SUMMARY_STATUS_LABEL = {
+  trended_up:   "trended up overall",
+  trended_down: "trended down overall",
+  mixed:        "mixed shifts across the mission",
+  stable:       "stable across the mission",
+  no_data:      "no data",
+};
+
+function renderSystemSummaries() {
+  const root = document.getElementById("summary-grid");
+  if (!root) return;
+  root.innerHTML = "";
+  const summaries = (state.bloodwork && state.bloodwork.system_summaries) || [];
+  if (!summaries.length) {
+    root.innerHTML = `<p class="muted">No system summaries available.</p>`;
+    return;
+  }
+
+  for (const s of summaries) {
+    const card = document.createElement("article");
+    card.className = `summary-card status-${s.overall_status || "stable"}`;
+
+    const statusIcon = SUMMARY_STATUS_ICON[s.overall_status] || "—";
+    const statusLabel = SUMMARY_STATUS_LABEL[s.overall_status] || s.overall_status || "";
+
+    let html = `
+      <header class="summary-card-header">
+        <div class="summary-card-title">
+          <span class="summary-icon" aria-hidden="true">${statusIcon}</span>
+          <h3>${escapeHtml(s.label)}</h3>
+        </div>
+        <p class="summary-card-subtitle">${escapeHtml(s.subtitle || "")}</p>
+        <p class="summary-card-status">${escapeHtml(statusLabel)} &middot; <span class="muted">${s.n_metrics_tracked} metrics tracked</span></p>
+      </header>
+      <ol class="summary-timeline">
+    `;
+
+    for (const f of (s.findings || [])) {
+      const pctBadge = (f.headline_pct != null)
+        ? `<span class="pct-badge ${f.headline_pct > 0 ? "up" : (f.headline_pct < 0 ? "down" : "muted")}">${f.headline_pct > 0 ? "+" : ""}${f.headline_pct}%</span>`
+        : "";
+      html += `
+        <li class="summary-finding cp-${escapeHtml(f.checkpoint)}">
+          <div class="summary-finding-cp">
+            <span class="cp-tag">${escapeHtml(f.checkpoint)}</span>
+            ${pctBadge}
+          </div>
+          <div class="summary-finding-body">
+            <p class="summary-finding-headline">${escapeHtml(f.headline)}</p>
+            <p class="summary-finding-detail">${escapeHtml(f.detail)}</p>
+          </div>
+        </li>
+      `;
+    }
+    html += `</ol>`;
+
+    if (s.sources && s.sources.length) {
+      html += `<p class="summary-card-sources"><strong>Sources:</strong> ${s.sources.map(escapeHtml).join("; ")}</p>`;
+    }
+
+    card.innerHTML = html;
+    root.appendChild(card);
+  }
+}
+
+// =============================================================
+// Findings (per-system detail cards — auxiliary view)
 // =============================================================
 
 const STATUS_ICON = {
@@ -630,11 +707,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
-    safe("mountAvatars",      () => mountAvatars(bodyDoc));
-    safe("wireEvents",        () => wireEvents());
-    safe("repaintAll",        () => repaintAll());
-    safe("renderFindings",    () => renderFindings());
-    safe("renderRawBloodwork", () => renderRawBloodwork());
+    safe("mountAvatars",        () => mountAvatars(bodyDoc));
+    safe("wireEvents",          () => wireEvents());
+    safe("repaintAll",          () => repaintAll());
+    safe("renderSystemSummaries", () => renderSystemSummaries());
+    safe("renderFindings",      () => renderFindings());
+    safe("renderRawBloodwork",  () => renderRawBloodwork());
   } catch (err) {
     console.error("Dashboard fatal load error:", err);
     document.getElementById("findings-list").innerHTML =
@@ -648,9 +726,10 @@ function safe(label, fn) {
     console.error(`[${label}] threw:`, err);
     // Surface the error inline if a known anchor element exists for that section.
     const anchors = {
-      mountAvatars:      "avatar-grid",
-      renderFindings:    "findings-list",
-      renderRawBloodwork: "cbc-plots",
+      mountAvatars:           "avatar-grid",
+      renderSystemSummaries:  "summary-grid",
+      renderFindings:         "findings-list",
+      renderRawBloodwork:     "cbc-plots",
     };
     const id = anchors[label];
     if (id) {
