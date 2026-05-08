@@ -2780,3 +2780,43 @@ footer {
   .hero-main { grid-template-columns: 1fr !important; }
   .hero-body-host { height: 60vh; min-height: 60vh !important; }
 }
+
+/* ============================================================
+   HERO V2 — give the whole page more horizontal breathing room
+   ============================================================ */
+
+main, header.page-header, footer { max-width: 1680px !important; }
+
+.hero {
+  padding: 40px 56px 44px !important;
+  gap: 28px !important;
+}
+
+.hero-main {
+  grid-template-columns: minmax(0, 1.6fr) minmax(420px, 1fr) !important;
+  gap: 40px !important;
+}
+
+.hero-stats-col {
+  padding: 26px 28px !important;
+}
+
+/* Legend gets its own breathing room and a sane wrap */
+#legend.hero-legend {
+  padding: 14px 22px !important;
+  gap: 16px 28px !important;
+}
+
+/* Slider strip */
+.hero-timeline {
+  padding: 16px 28px 22px !important;
+}
+
+/* Tabs */
+.hero-tabs { gap: 14px !important; }
+.hero-tab  { padding: 14px 28px 12px !important; }
+
+@media (max-width: 1100px) {
+  .hero-main { grid-template-columns: 1fr !important; }
+  .hero { padding: 24px 24px !important; }
+}
