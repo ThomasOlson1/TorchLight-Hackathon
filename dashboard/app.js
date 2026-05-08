@@ -36,6 +36,7 @@ const state = {
   bloodwork: null,     // { crew, timepoints, panels, systems, findings }
   opportunists: null,  // { speciesName: { note, ref } }
   beneficials: null,   // { speciesName: { note, ref } }
+  astronautGltf: null, // shared loaded GLTF, cloned per avatar
   timepointIdx: 0,
   selectedCrew: null,
 };
@@ -45,13 +46,16 @@ const state = {
 // =============================================================
 
 async function loadAll() {
-  const [microbiome, bloodwork, opportunists, beneficials] = await Promise.all([
+  // Astronaut.glb is loaded in parallel with the JSON. If it fails (e.g.
+  // offline or asset missing) the avatars fall back to 2D SVG bodies.
+  const [microbiome, bloodwork, opportunists, beneficials, gltf] = await Promise.all([
     fetch(MICROBIOME_URL).then(r => r.json()),
     fetch(BLOODWORK_URL).then(r => r.json()),
     fetch(OPPORTUNISTS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BENEFICIALS_URL).then(r => r.json()).catch(() => ({})),
+    loadAstronaut().catch(err => { console.warn("Astronaut model failed to load:", err); return null; }),
   ]);
-  return { microbiome, bloodwork, opportunists, beneficials };
+  return { microbiome, bloodwork, opportunists, beneficials, gltf };
 }
 
 // Returns { note, ref } if the species is on the curated opportunist list, else null.
@@ -100,36 +104,50 @@ function colorForScore(d, withinBaselineNoise) {
 // =============================================================
 
 import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-// Anatomical hotspot positions in body-local coordinates.
-// The body is built standing on the y=0 plane, head up the +y axis,
-// facing +z. Units are arbitrary; the camera frames everything.
+const ASTRONAUT_URL = "./assets/Astronaut.glb";
+
+// Load the astronaut model exactly once and let every avatar clone it.
+let _astronautPromise = null;
+function loadAstronaut() {
+  if (!_astronautPromise) {
+    const loader = new GLTFLoader();
+    _astronautPromise = new Promise((resolve, reject) => {
+      loader.load(ASTRONAUT_URL, (gltf) => resolve(gltf), undefined, reject);
+    });
+  }
+  return _astronautPromise;
+}
+
+// Anatomical hotspot positions in the astronaut model's local coordinates.
+// The Astronaut.glb model stands on the y=0 plane, faces +z, scale ~1m tall.
+// Positions found by visual inspection of the rigged model.
 const HOTSPOT_POSITIONS = {
-  // Front of head and face
-  glabella:       new THREE.Vector3( 0.00, 1.78,  0.18),
-  nasal:          new THREE.Vector3( 0.00, 1.72,  0.18),
-  oral:           new THREE.Vector3( 0.00, 1.66,  0.18),
-  // Sides
-  post_auricular: new THREE.Vector3(-0.16, 1.74, -0.05),
-  axillary:       new THREE.Vector3(-0.32, 1.34,  0.00),
-  forearm:        new THREE.Vector3(-0.78, 1.40,  0.00),
+  // Helmet front (visor area). The model has a glass dome head.
+  glabella:       new THREE.Vector3( 0.00, 1.42,  0.20),
+  nasal:          new THREE.Vector3( 0.00, 1.36,  0.22),
+  oral:           new THREE.Vector3( 0.00, 1.30,  0.22),
+  // Helmet sides / back
+  post_auricular: new THREE.Vector3(-0.18, 1.36, -0.02),
+  occiput:        new THREE.Vector3( 0.00, 1.40, -0.20),
+  // Suit shoulders & arms
+  axillary:       new THREE.Vector3(-0.22, 1.05,  0.00),
+  forearm:        new THREE.Vector3(-0.42, 0.78,  0.05),
   // Front torso
-  umbilicus:      new THREE.Vector3( 0.00, 1.05,  0.20),
-  // Back
-  occiput:        new THREE.Vector3( 0.00, 1.78, -0.18),
-  gluteal:        new THREE.Vector3( 0.00, 0.78, -0.20),
-  // Lower
-  toe_web:        new THREE.Vector3(-0.10, 0.04,  0.10),
+  umbilicus:      new THREE.Vector3( 0.00, 0.85,  0.22),
+  // Lower back
+  gluteal:        new THREE.Vector3( 0.00, 0.55, -0.22),
+  // Boot top
+  toe_web:        new THREE.Vector3(-0.10, 0.10,  0.18),
 };
 
-const BODY_COLOR    = 0xd4c8a8;  // matches CSS body fill
-const BODY_OUTLINE  = 0x6e6856;  // matches CSS body stroke
-const HOTSPOT_RADIUS = 0.06;
+const HOTSPOT_RADIUS = 0.05;
 
 const avatars = new Map();  // crew_id -> Avatar3D instance
 
 class Avatar3D {
-  constructor(canvas, crewId) {
+  constructor(canvas, crewId, gltf) {
     this.canvas = canvas;
     this.crewId = crewId;
     this.dirty = true;
@@ -142,9 +160,9 @@ class Avatar3D {
     this.scene = new THREE.Scene();
     this.scene.background = null;
 
-    this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 50);
-    this.camera.position.set(0, 1.0, 4.6);
-    this.camera.lookAt(0, 1.0, 0);
+    this.camera = new THREE.PerspectiveCamera(34, w / h, 0.05, 50);
+    this.camera.position.set(0, 0.85, 3.0);
+    this.camera.lookAt(0, 0.85, 0);
 
     // Permissive WebGL options. If context creation throws, the caller
     // (mountAvatars) will catch it and fall back to a 2D SVG body.
@@ -172,12 +190,14 @@ class Avatar3D {
     this.root = new THREE.Group();
     this.scene.add(this.root);
 
-    this.body = this.buildTPoseBody();
+    // Clone the astronaut model so each crew has an independent transform tree.
+    // Materials are cloned where we'll never modify them so they can be shared.
+    this.body = gltf.scene.clone(true);
     this.root.add(this.body);
 
     // Hotspot meshes, one per anatomical site.
     this.hotspots = new Map();
-    const hotspotGeom = new THREE.SphereGeometry(HOTSPOT_RADIUS, 18, 14);
+    const hotspotGeom = new THREE.SphereGeometry(HOTSPOT_RADIUS, 22, 16);
     for (const [site, pos] of Object.entries(HOTSPOT_POSITIONS)) {
       const mat = new THREE.MeshStandardMaterial({
         color: 0xececec, roughness: 0.35, metalness: 0.0,
@@ -210,78 +230,6 @@ class Avatar3D {
     requestAnimationFrame(() => requestAnimationFrame(() => this.handleResize()));
 
     this.requestRender();
-  }
-
-  buildTPoseBody() {
-    const g = new THREE.Group();
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: BODY_COLOR, roughness: 0.85, metalness: 0.0,
-    });
-
-    // Head (sphere)
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 28, 22), bodyMat);
-    head.position.set(0, 1.74, 0);
-    g.add(head);
-
-    // Neck (cylinder)
-    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.10, 16), bodyMat);
-    neck.position.set(0, 1.55, 0);
-    g.add(neck);
-
-    // Torso (capsule-ish: cylinder with sphere caps)
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.18, 0.65, 24), bodyMat);
-    torso.position.set(0, 1.18, 0);
-    g.add(torso);
-    const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.20, 24, 18), bodyMat);
-    shoulders.position.set(0, 1.50, 0);
-    g.add(shoulders);
-    const hips = new THREE.Mesh(new THREE.SphereGeometry(0.18, 24, 18), bodyMat);
-    hips.position.set(0, 0.85, 0);
-    g.add(hips);
-
-    // Arms (T-pose: extended horizontally along -x and +x)
-    const armLen = 0.70;
-    const armGeom = new THREE.CylinderGeometry(0.058, 0.05, armLen, 16);
-
-    const leftArm = new THREE.Mesh(armGeom, bodyMat);
-    leftArm.rotation.z = Math.PI / 2;     // lay along x
-    leftArm.position.set(-0.20 - armLen / 2, 1.43, 0);
-    g.add(leftArm);
-    // Hands (small spheres at the wrists)
-    const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 18, 14), bodyMat);
-    leftHand.position.set(-0.20 - armLen, 1.43, 0);
-    g.add(leftHand);
-
-    const rightArm = new THREE.Mesh(armGeom, bodyMat);
-    rightArm.rotation.z = Math.PI / 2;
-    rightArm.position.set( 0.20 + armLen / 2, 1.43, 0);
-    g.add(rightArm);
-    const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 18, 14), bodyMat);
-    rightHand.position.set(0.20 + armLen, 1.43, 0);
-    g.add(rightHand);
-
-    // Legs
-    const legLen = 0.78;
-    const legGeom = new THREE.CylinderGeometry(0.075, 0.06, legLen, 18);
-    const leftLeg = new THREE.Mesh(legGeom, bodyMat);
-    leftLeg.position.set(-0.10, 0.85 - legLen / 2 - 0.05, 0);
-    g.add(leftLeg);
-    const rightLeg = new THREE.Mesh(legGeom, bodyMat);
-    rightLeg.position.set( 0.10, 0.85 - legLen / 2 - 0.05, 0);
-    g.add(rightLeg);
-
-    // Feet (flattened spheres at floor level)
-    const footGeom = new THREE.SphereGeometry(0.08, 16, 12);
-    const leftFoot = new THREE.Mesh(footGeom, bodyMat);
-    leftFoot.position.set(-0.10, 0.04, 0.05);
-    leftFoot.scale.set(1.0, 0.45, 1.5);
-    g.add(leftFoot);
-    const rightFoot = new THREE.Mesh(footGeom, bodyMat);
-    rightFoot.position.set( 0.10, 0.04, 0.05);
-    rightFoot.scale.set(1.0, 0.45, 1.5);
-    g.add(rightFoot);
-
-    return g;
   }
 
   attachControls() {
@@ -359,19 +307,18 @@ class Avatar3D {
   setScores(scoresForCrew, timepoint) {
     for (const [site, mesh] of this.hotspots) {
       const cell = (scoresForCrew[site] || {})[timepoint];
+      // Hotspot size is fixed; only color (and a subtle emissive pop on
+      // high-disturbance regions) changes with score.
+      mesh.scale.setScalar(1.0);
       if (!cell) {
         mesh.material.color.set(0xeeeae0);
         mesh.material.emissive.set(0x000000);
-        mesh.scale.setScalar(0.65);
         mesh.userData.tooltip = `${labelForSite(site)} · ${timepoint}: no swab collected`;
       } else {
         const css = colorForScore(cell.d, cell.within_baseline_noise);
-        // Convert CSS rgb(...) string to a hex/Color
         mesh.material.color.set(this.cssToColor(css));
-        // Subtle emissive pop for high scores so they're easier to spot at small sizes.
         const intensity = Math.max(0, Math.min(1, cell.d - 0.4));
-        mesh.material.emissive.setRGB(intensity * 0.6, intensity * 0.18, 0.0);
-        mesh.scale.setScalar(0.85 + Math.min(1, cell.d) * 0.6);
+        mesh.material.emissive.setRGB(intensity * 0.5, intensity * 0.15, 0.0);
         const noiseTag = cell.within_baseline_noise ? " (within baseline noise)" : "";
         mesh.userData.tooltip =
           `${labelForSite(site)} · ${timepoint}\nd = ${cell.d.toFixed(2)} [95% CI ${cell.ci_lo.toFixed(2)}–${cell.ci_hi.toFixed(2)}], n=${cell.n_baseline}${noiseTag}`;
@@ -405,16 +352,20 @@ class Avatar3D {
 }
 
 function mountAvatars() {
+  const gltf = state.astronautGltf;
   document.querySelectorAll("figure[data-crew] .avatar-canvas").forEach(canvas => {
     const fig = canvas.closest("figure[data-crew]");
     const crew = fig.dataset.crew;
+    if (!gltf) {
+      // Astronaut model didn't load; go straight to 2D SVG.
+      avatars.set(crew, new Avatar2D(canvas, crew));
+      return;
+    }
     try {
-      const av = new Avatar3D(canvas, crew);
-      avatars.set(crew, av);
+      avatars.set(crew, new Avatar3D(canvas, crew, gltf));
     } catch (err) {
       console.warn(`[${crew}] WebGL avatar failed, falling back to 2D SVG:`, err);
-      const av = new Avatar2D(canvas, crew);
-      avatars.set(crew, av);
+      avatars.set(crew, new Avatar2D(canvas, crew));
     }
   });
 }
@@ -960,11 +911,12 @@ function wireEvents() {
 document.addEventListener("DOMContentLoaded", async () => {
   // Each step is isolated: one failing render shouldn't black out the whole page.
   try {
-    const { microbiome, bloodwork, opportunists, beneficials } = await loadAll();
+    const { microbiome, bloodwork, opportunists, beneficials, gltf } = await loadAll();
     state.microbiome = microbiome;
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
+    state.astronautGltf = gltf;
     safe("mountAvatars",        () => mountAvatars());
     safe("wireEvents",          () => wireEvents());
     safe("repaintAll",          () => repaintAll());
