@@ -324,14 +324,21 @@ class Avatar2D {
 }
 
 function repaintAll() {
+  if (!state.microbiome) return;
   const tp = state.microbiome.timepoints[state.timepointIdx];
-  document.getElementById("timepoint-label").textContent = tp;
-  // Roster tiles (small static bodies)
-  for (const [crew, av] of avatars) {
-    av.setScores(state.microbiome.scores[crew] || {}, tp);
-  }
-  // Featured stage body
-  paintFeaturedBody();
+  const lbl = document.getElementById("timepoint-label");
+  if (lbl) lbl.textContent = tp;
+
+  // Active timepoint mark
+  document.querySelectorAll(".timepoint-mark").forEach(m => {
+    m.classList.toggle("active", Number(m.dataset.idx) === state.timepointIdx);
+  });
+
+  // Hero body + stats (the stats panel rebuilds the top-3 hotspot list,
+  // which is timepoint-dependent).
+  paintHeroBody();
+  renderHeroStats();
+
   refreshDrilldown();
 }
 
@@ -838,6 +845,233 @@ function renderEvidenceTable(evidence) {
 }
 
 // =============================================================
+// Hero (unified single-screen view: tabs + body + stats + timeline)
+// =============================================================
+
+let selectedHeroCrew = "C001";
+let heroAvatar = null;
+
+function mountHero() {
+  // Tabs
+  const tabs = document.getElementById("hero-tabs");
+  if (tabs) renderHeroTabs(tabs);
+
+  // Body host (Avatar2D with dynamic crewId getter)
+  const host = document.getElementById("hero-body-host");
+  if (host) {
+    heroAvatar = new Avatar2D(host, () => selectedHeroCrew, { interactive: true });
+  }
+
+  // Initial stats panel
+  renderHeroStats();
+
+  // Timeline tick marks
+  renderTimelineMarks();
+
+  // Sync hero data-crew attribute for color theming
+  const hero = document.getElementById("hero");
+  if (hero) hero.dataset.crew = selectedHeroCrew;
+
+  // Drilldown close button
+  const closeBtn = document.querySelector(".drilldown-close");
+  if (closeBtn) closeBtn.addEventListener("click", closeDrilldown);
+}
+
+function renderHeroTabs(tabs) {
+  const crewIds = (state.bloodwork && state.bloodwork.crew)
+    || (state.microbiome && state.microbiome.crew)
+    || ["C001","C002","C003","C004"];
+  if (!crewIds.includes(selectedHeroCrew)) selectedHeroCrew = crewIds[0];
+
+  tabs.innerHTML = "";
+  crewIds.forEach((crew, i) => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "hero-tab";
+    btn.dataset.crew = crew;
+    btn.dataset.index = String(i);
+    btn.setAttribute("role", "tab");
+    btn.setAttribute("aria-selected", crew === selectedHeroCrew ? "true" : "false");
+    btn.innerHTML = `
+      <span class="hero-tab-id">${escapeHtml(crew)}</span>
+      <span class="hero-tab-status" data-status="${escapeHtml(crewStatusFor(crew))}"></span>
+    `;
+    btn.addEventListener("click", () => selectHeroCrew(crew));
+    btn.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+        e.preventDefault();
+        selectHeroCrew(crewIds[(i + 1) % crewIds.length]);
+        focusActiveHeroTab();
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+        e.preventDefault();
+        selectHeroCrew(crewIds[(i - 1 + crewIds.length) % crewIds.length]);
+        focusActiveHeroTab();
+      }
+    });
+    tabs.appendChild(btn);
+  });
+}
+
+function crewStatusFor(crew) {
+  const cs = (state.bloodwork && state.bloodwork.crew_summaries) || [];
+  const c = cs.find(x => x.crew_id === crew);
+  return c ? (c.overall_status || "no_data") : "no_data";
+}
+
+function focusActiveHeroTab() {
+  const t = document.querySelector(`.hero-tab[aria-selected="true"]`);
+  if (t && document.activeElement !== t) t.focus();
+}
+
+function selectHeroCrew(crew) {
+  if (!crew || crew === selectedHeroCrew) return;
+  selectedHeroCrew = crew;
+
+  // Tabs
+  document.querySelectorAll(".hero-tab").forEach(t => {
+    t.setAttribute("aria-selected", t.dataset.crew === crew ? "true" : "false");
+  });
+
+  // Banner
+  const idEl = document.getElementById("hero-crew-id");
+  if (idEl) idEl.textContent = crew;
+  const hero = document.getElementById("hero");
+  if (hero) hero.dataset.crew = crew;
+
+  // Body + stats
+  paintHeroBody();
+  renderHeroStats();
+
+  // Cross-section sync
+  selectCrew(crew);
+
+  // Drilldown follows the new crew if open
+  if (activeDrilldown) {
+    activeDrilldown.crew = crew;
+    refreshDrilldown();
+  }
+}
+
+function paintHeroBody() {
+  if (!heroAvatar || !state.microbiome) return;
+  const tp = state.microbiome.timepoints[state.timepointIdx];
+  heroAvatar.setScores(state.microbiome.scores[selectedHeroCrew] || {}, tp);
+}
+
+function renderHeroStats() {
+  const root = document.getElementById("hero-stats");
+  if (!root) return;
+  const crewSummaries = (state.bloodwork && state.bloodwork.crew_summaries) || [];
+  const c = crewSummaries.find(x => x.crew_id === selectedHeroCrew);
+  if (!c) {
+    root.innerHTML = `<p class="muted">No data for ${escapeHtml(selectedHeroCrew)}</p>`;
+    return;
+  }
+
+  const overallIcon = CREW_STATUS_ICON[c.overall_status] || "·";
+  const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status || "";
+
+  // System tiles - click any to expand the timeline detail
+  const systemTiles = (c.systems || []).map(sys => `
+    <details class="hero-sys sys-${escapeHtml(sys.current_status)} concern-${escapeHtml(sys.concern_level)}">
+      <summary>
+        <span class="hero-sys-icon">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
+        <span class="hero-sys-label">${escapeHtml(sys.label)}</span>
+        <span class="hero-sys-status">${escapeHtml(SYSTEM_STATUS_LABEL[sys.current_status] || "")}</span>
+        <span class="hero-sys-disclose">+</span>
+      </summary>
+      <div class="hero-sys-detail">
+        <p class="current-line">${escapeHtml(sys.current_text)}</p>
+        ${sys.clinical_context ? `<p class="clinical-context-inline">${escapeHtml(sys.clinical_context)}</p>` : ""}
+        <table class="crew-system-checkpoints">
+          <thead><tr><th>Timepoint</th><th>Direction</th><th>Headline % vs baseline</th></tr></thead>
+          <tbody>
+            ${(sys.checkpoints || []).map(cp => {
+              const pct = cp.headline_pct;
+              const dirClass = pct == null ? "muted" : (pct > 3 ? "up" : (pct < -3 ? "down" : "stable"));
+              const sign = pct == null ? "" : (pct > 0 ? "+" : "");
+              return `<tr>
+                <td class="cp-cell-name">${escapeHtml(cp.checkpoint)}</td>
+                <td class="cp-cell-status">${escapeHtml(cp.status)}</td>
+                <td class="cp-cell-pct pct-${dirClass}">${pct == null ? "—" : sign + pct + "%"}</td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>
+    </details>
+  `).join("");
+
+  // Top microbiome shifts at the current timepoint
+  const tp = state.microbiome ? state.microbiome.timepoints[state.timepointIdx] : "";
+  const sites = state.microbiome ? state.microbiome.sites : [];
+  const scoresByCrew = state.microbiome ? state.microbiome.scores[selectedHeroCrew] || {} : {};
+  const sortedSites = sites
+    .map(site => {
+      const cell = (scoresByCrew[site] || {})[tp];
+      return cell ? { site, d: cell.d, cell } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.d - a.d)
+    .slice(0, 4);
+
+  const hotspotList = sortedSites.length === 0
+    ? `<li class="muted">No swab data at ${escapeHtml(tp)}</li>`
+    : sortedSites.map(({ site, d, cell }) => `
+        <li class="hero-hotspot" data-site="${escapeHtml(site)}">
+          <span class="hero-hotspot-dot" style="background: ${colorForScore(d, cell.within_baseline_noise)}"></span>
+          <span class="hero-hotspot-name">${escapeHtml(labelForSite(site))}</span>
+          <span class="hero-hotspot-d">d = ${d.toFixed(2)}</span>
+        </li>
+      `).join("");
+
+  root.innerHTML = `
+    <header class="hero-stats-header status-${escapeHtml(c.overall_status || "no_data")}">
+      <span class="hero-stats-status-icon">${overallIcon}</span>
+      <div>
+        <span class="hero-stats-status-label">${escapeHtml(overallLabel)}</span>
+        <p class="hero-stats-overview">${escapeHtml(c.overall_text)}</p>
+      </div>
+    </header>
+
+    <h3 class="hero-stats-h3">Bloodwork systems <span class="muted">(click to expand)</span></h3>
+    <div class="hero-systems">${systemTiles}</div>
+
+    <h3 class="hero-stats-h3">Top microbiome shifts at <span class="current-tp">${escapeHtml(tp)}</span></h3>
+    <ul class="hero-hotspots">${hotspotList}</ul>
+
+    <p class="hero-stats-meta">Compared against ${escapeHtml(selectedHeroCrew)}'s own pre-flight baseline (mean of L-92, L-44, L-3).</p>
+  `;
+
+  // Wire hotspot clicks
+  root.querySelectorAll(".hero-hotspot").forEach(li => {
+    li.addEventListener("click", () => {
+      openDrilldown(selectedHeroCrew, li.dataset.site);
+    });
+  });
+}
+
+function renderTimelineMarks() {
+  const root = document.getElementById("timepoint-marks");
+  if (!root || !state.microbiome) return;
+  const tps = state.microbiome.timepoints;
+  root.innerHTML = tps.map((tp, i) => `
+    <button type="button" class="timepoint-mark" data-idx="${i}" title="Jump to ${escapeHtml(tp)}">
+      <span class="tp-dot"></span>
+      <span class="tp-label">${escapeHtml(tp)}</span>
+    </button>
+  `).join("");
+  root.querySelectorAll(".timepoint-mark").forEach(btn => {
+    btn.addEventListener("click", () => {
+      state.timepointIdx = Number(btn.dataset.idx);
+      const slider = document.getElementById("timepoint");
+      if (slider) slider.value = String(state.timepointIdx);
+      repaintAll();
+    });
+  });
+}
+
+// =============================================================
 // Event wiring
 // =============================================================
 
@@ -867,11 +1101,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
-    safe("mountAvatars",        () => mountAvatars());
-    safe("wireEvents",          () => wireEvents());
-    safe("repaintAll",          () => repaintAll());
-    safe("renderCrewSummaries",   () => renderCrewSummaries());
-    safe("renderFindings",        () => renderFindings());
+    safe("mountHero",      () => mountHero());
+    safe("wireEvents",     () => wireEvents());
+    safe("repaintAll",     () => repaintAll());
+    safe("renderFindings", () => renderFindings());
   } catch (err) {
     console.error("Dashboard fatal load error:", err);
     document.getElementById("findings-list").innerHTML =
@@ -885,9 +1118,8 @@ function safe(label, fn) {
     console.error(`[${label}] threw:`, err);
     // Surface the error inline if a known anchor element exists for that section.
     const anchors = {
-      mountAvatars:           "avatar-grid",
-      renderCrewSummaries:    "crew-grid",
-      renderFindings:         "findings-list",
+      mountHero:      "hero",
+      renderFindings: "findings-list",
     };
     const id = anchors[label];
     if (id) {

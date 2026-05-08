@@ -35,89 +35,51 @@
 
   <main>
 
-    <section class="panel" id="bloodwork-report">
-      <h2>Personal recovery report</h2>
-      <p class="panel-subtitle">
-        One card per crew member. Each shows where that astronaut is now compared to their own pre-flight baseline
-        (mean of L-92, L-44, L-3, never a population norm) across four bloodwork panels: CBC, CMP, immune
-        cytokines, and cardiovascular markers (OSD-569 + OSD-575).
-      </p>
-      <aside class="summary-legend" aria-label="Legend">
-        <span class="legend-title">How to read each card:</span>
-        <span class="legend-item"><span class="status-dot back_to_baseline"></span>back within personal baseline</span>
-        <span class="legend-item"><span class="status-dot mixed"></span>mixed shifts</span>
-        <span class="legend-item"><span class="status-dot still_elevated"></span>still elevated</span>
-        <span class="legend-item"><span class="status-dot still_decreased"></span>still below baseline</span>
-        <span class="legend-sep"></span>
-        <span class="legend-item"><span class="concern-dot expected"></span>expected pattern</span>
-        <span class="legend-item"><span class="concern-dot watch"></span>worth watching</span>
-        <span class="legend-item"><span class="concern-dot follow_up"></span>follow-up advised</span>
-      </aside>
-      <div id="crew-select" class="crew-select" aria-live="polite">
-        <p class="muted">Loading personal cards...</p>
-      </div>
-    </section>
+    <section class="hero" id="hero" aria-label="Crew profile">
+      <div class="hero-bg" aria-hidden="true"></div>
+      <div class="hero-glow" aria-hidden="true"></div>
+      <div class="hero-grid-overlay" aria-hidden="true"></div>
 
-    <section class="panel" id="findings-detail">
-      <details>
-        <summary>
-          <h2 style="display:inline">Per-system auto-generated findings</h2>
-          <span class="muted" style="margin-left:8px">(more granular detail)</span>
-        </summary>
-        <div id="findings-list"></div>
-      </details>
-    </section>
+      <!-- Top row: crew tabs (horizontal nav, no sliding) -->
+      <nav class="hero-tabs" id="hero-tabs" role="tablist" aria-label="Select crew">
+        <p class="muted">Loading...</p>
+      </nav>
 
-
-    <section class="panel hero-microbiome" id="avatar-section">
-      <header class="hero-header">
-        <h2>Microbiome: where on the body did things shift?</h2>
-        <p class="panel-subtitle">
-          For each crew member, color shows how far that body site's microbial community has drifted from
-          their <em>own</em> pre-flight baseline (Bray–Curtis distance). Click a region to see which organisms
-          drove the shift.
-        </p>
-      </header>
-
-      <div class="microbiome-stage" id="microbiome-stage">
-        <div class="stage-glow" aria-hidden="true"></div>
-        <div class="stage-grid-overlay" aria-hidden="true"></div>
-
-        <div class="stage-featured" id="stage-featured">
-          <div class="stage-crew-banner">
-            <span class="stage-crew-label">CREW</span>
-            <span class="stage-crew-id" id="stage-crew-id">C001</span>
+      <!-- Main hero row: body on the left, stats on the right -->
+      <div class="hero-main">
+        <!-- Left column: big body with crew ID overlaid -->
+        <div class="hero-body-col">
+          <div class="hero-crew-banner">
+            <span class="hero-crew-label">CREW</span>
+            <span class="hero-crew-id" id="hero-crew-id">C001</span>
           </div>
-          <div class="stage-body" id="featured-body-host"></div>
-          <p class="stage-instruction">Click any colored region for taxa drilldown</p>
+          <div class="hero-body-host" id="hero-body-host"></div>
+          <p class="hero-body-hint">Click any colored region for taxa drilldown</p>
         </div>
 
-        <aside id="drilldown" class="stage-drilldown" hidden>
-          <header>
-            <h3 id="drilldown-title">Drill-down</h3>
-            <span class="crew-tag" id="drilldown-tag"></span>
-          </header>
-          <p id="drilldown-summary"></p>
-          <div id="drilldown-content"></div>
+        <!-- Right column: recovery stats + microbiome hotspots -->
+        <aside class="hero-stats-col" id="hero-stats">
+          <p class="muted">Loading recovery report...</p>
         </aside>
       </div>
 
-      <div class="microbiome-controls">
+      <!-- Time slider with checkpoint marks for "changes over time" -->
+      <div class="hero-timeline">
         <div id="timepoint-slider-wrap">
           <label for="timepoint">Timepoint</label>
           <input type="range" id="timepoint" min="0" max="7" value="0" step="1" aria-describedby="timepoint-help">
           <span id="timepoint-label" aria-live="polite">L-92</span>
         </div>
+        <div id="timepoint-marks" class="timepoint-marks" aria-hidden="true"></div>
         <p class="timepoint-help" id="timepoint-help">
           L = days before launch · FD = flight day · R = days after return.
         </p>
       </div>
 
-      <nav id="microbiome-roster" class="microbiome-roster" role="tablist" aria-label="Select crew member"></nav>
-
-      <aside id="legend" aria-label="Color legend">
+      <!-- Color legend -->
+      <aside id="legend" class="hero-legend" aria-label="Color legend">
         <div class="scale">
-          <span>Distance from baseline:</span>
+          <span>Microbiome distance from baseline:</span>
           <span class="scale-bar" aria-hidden="true">
             <span style="background: var(--score-0)"></span>
             <span style="background: var(--score-1)"></span>
@@ -128,8 +90,29 @@
           </span>
           <span class="scale-labels"><span>near baseline</span> &nbsp;→&nbsp; <span>strongly shifted</span></span>
         </div>
-        <span class="legend-item"><span class="swatch no-data"></span> no swab collected</span>
+        <span class="legend-item"><span class="swatch no-data"></span> no swab</span>
       </aside>
+
+      <!-- Drilldown panel slides up from the right when a region is clicked -->
+      <aside id="drilldown" class="hero-drilldown" hidden>
+        <header>
+          <h3 id="drilldown-title">Drill-down</h3>
+          <span class="crew-tag" id="drilldown-tag"></span>
+          <button type="button" class="drilldown-close" aria-label="Close drilldown">×</button>
+        </header>
+        <p id="drilldown-summary"></p>
+        <div id="drilldown-content"></div>
+      </aside>
+    </section>
+
+    <section class="panel below-hero" id="findings-detail">
+      <details>
+        <summary>
+          <h2 style="display:inline">Per-system auto-generated findings</h2>
+          <span class="muted" style="margin-left:8px">(more granular detail)</span>
+        </summary>
+        <div id="findings-list"></div>
+      </details>
     </section>
 
     <section class="panel">
