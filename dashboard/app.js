@@ -1,15 +1,13 @@
 // =============================================================
 // Recovery, Honestly — frontend
-// Wires:
-//   - microbiome.json  -> 2x2 SVG avatar grid + drilldown
-//   - cbc.json         -> per-metric Plotly small multiples
-//   - timepoint slider -> repaints all four avatars in sync
-//   - region click     -> drilldown panel with top taxa
-//   - figure click     -> crew selection (fades others, highlights CBC)
-//
-// Data contract: dashboard/data/microbiome.json + dashboard/data/cbc.json
-// (currently fetched as fixture-*.json — flip URLs once real pipelines emit).
+// Single dark hero: crew tabs, big rotating 3D astronaut, expandable
+// per-system bloodwork tiles (with auto-classified findings embedded),
+// top-microbiome hotspot list, timepoint slider with checkpoint marks,
+// drilldown overlay.
 // =============================================================
+
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
 const DATA_DIR = "./data";
 const MICROBIOME_URL = `${DATA_DIR}/microbiome.json`;
@@ -845,36 +843,226 @@ function renderEvidenceTable(evidence) {
 }
 
 // =============================================================
+// 3D astronaut body for the hero (spinning glTF model + clickable hotspots)
+// =============================================================
+
+const ASTRONAUT_URL = "./assets/Astronaut.glb";
+const HERO_SPIN_RPM = 4;
+const HERO_RADIANS_PER_FRAME = (HERO_SPIN_RPM * 2 * Math.PI) / 60 / 60;
+
+// Anatomical hotspot positions tuned to the Astronaut.glb model.
+const HERO_HOTSPOT_POSITIONS = {
+  glabella:       [ 0.00, 1.42,  0.20],
+  nasal:          [ 0.00, 1.36,  0.22],
+  oral:           [ 0.00, 1.30,  0.22],
+  post_auricular: [-0.18, 1.36, -0.02],
+  occiput:        [ 0.00, 1.40, -0.20],
+  axillary:       [-0.22, 1.05,  0.00],
+  forearm:        [-0.42, 0.78,  0.05],
+  umbilicus:      [ 0.00, 0.85,  0.22],
+  gluteal:        [ 0.00, 0.55, -0.22],
+  toe_web:        [-0.10, 0.10,  0.18],
+};
+
+// Shared loader (cached so the model only fetches once).
+let _astronautPromise = null;
+function loadAstronaut() {
+  if (!_astronautPromise) {
+    const loader = new GLTFLoader();
+    _astronautPromise = new Promise((resolve, reject) => {
+      loader.load(ASTRONAUT_URL, resolve, undefined, reject);
+    });
+  }
+  return _astronautPromise;
+}
+
+async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSiteClick }) {
+  let renderer;
+  try {
+    renderer = new THREE.WebGLRenderer({
+      alpha: true,
+      antialias: true,
+      failIfMajorPerformanceCaveat: false,
+    });
+  } catch (err) {
+    console.warn("Hero body 3D: WebGL unavailable, falling back to 2D.", err);
+    return null;
+  }
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const canvas = renderer.domElement;
+  canvas.classList.add("hero-body-canvas");
+  host.appendChild(canvas);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(28, 1, 0.05, 50);
+  camera.position.set(0, 0.95, 5.0);
+  camera.lookAt(0, 0.95, 0);
+
+  scene.add(new THREE.AmbientLight(0xfff5e0, 0.55));
+  const key = new THREE.DirectionalLight(0xffffff, 1.1);
+  key.position.set(2, 4, 3); scene.add(key);
+  const fill = new THREE.DirectionalLight(0xc7d8ff, 0.45);
+  fill.position.set(-3, 2, 2); scene.add(fill);
+  const rim = new THREE.DirectionalLight(0xffaa55, 0.35);
+  rim.position.set(0, 1, -3); scene.add(rim);
+
+  const pivot = new THREE.Group();
+  pivot.position.y = 0.95;
+  scene.add(pivot);
+
+  let gltf;
+  try {
+    gltf = await loadAstronaut();
+  } catch (err) {
+    console.warn("Hero body 3D: model failed to load.", err);
+    host.removeChild(canvas);
+    return null;
+  }
+  const model = gltf.scene.clone(true);
+  model.position.y = -0.95; // recenter inside pivot
+  pivot.add(model);
+
+  // Hotspot meshes for the 10 anatomical sites.
+  const hotspots = new Map();
+  const hotspotGeom = new THREE.SphereGeometry(0.06, 22, 16);
+  for (const [site, pos] of Object.entries(HERO_HOTSPOT_POSITIONS)) {
+    const mat = new THREE.MeshStandardMaterial({
+      color: 0xececec, roughness: 0.35, metalness: 0.0, emissive: 0x000000,
+    });
+    const mesh = new THREE.Mesh(hotspotGeom, mat);
+    // Pivot is at world y=0.95; model is at -0.95 inside it. Hotspots are
+    // also children of the pivot, so subtract the same offset to live in
+    // the model's anatomical frame.
+    mesh.position.set(pos[0], pos[1] - 0.95, pos[2]);
+    mesh.userData.site = site;
+    pivot.add(mesh);
+    hotspots.set(site, mesh);
+  }
+
+  function fitToHost() {
+    const w = Math.max(1, host.clientWidth  || 480);
+    const h = Math.max(1, host.clientHeight || 560);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  fitToHost();
+  window.addEventListener("resize", fitToHost);
+  requestAnimationFrame(() => requestAnimationFrame(fitToHost));
+
+  // Raycaster for hover/click on hotspots.
+  const raycaster = new THREE.Raycaster();
+  const pointer = new THREE.Vector2();
+  let isHover = false;
+
+  function setPointer(e) {
+    const r = canvas.getBoundingClientRect();
+    pointer.x = ((e.clientX - r.left) / r.width)  *  2 - 1;
+    pointer.y = ((e.clientY - r.top)  / r.height) * -2 + 1;
+  }
+  function pickHotspot(e) {
+    setPointer(e);
+    raycaster.setFromCamera(pointer, camera);
+    const hits = raycaster.intersectObjects([...hotspots.values()], false);
+    return hits.length ? hits[0].object : null;
+  }
+
+  canvas.addEventListener("mousemove", (e) => {
+    const hit = pickHotspot(e);
+    isHover = !!hit;
+    canvas.style.cursor = hit ? "pointer" : "default";
+    canvas.title = hit ? (hit.userData.tooltip || labelForSite(hit.userData.site)) : "";
+  });
+  canvas.addEventListener("mouseleave", () => {
+    isHover = false;
+    canvas.style.cursor = "";
+    canvas.title = "";
+  });
+  canvas.addEventListener("click", (e) => {
+    const hit = pickHotspot(e);
+    if (hit && onSiteClick) onSiteClick(hit.userData.site);
+  });
+
+  let prev = performance.now();
+  function frame(now) {
+    const dt = Math.min(48, now - prev);
+    prev = now;
+    // Auto-rotate around y, but pause while the user is hovering so they can click.
+    if (!isHover) pivot.rotation.y += HERO_RADIANS_PER_FRAME * (dt / (1000 / 60));
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  function setScores(scoresForCrew, timepoint) {
+    for (const [site, mesh] of hotspots) {
+      const cell = (scoresForCrew[site] || {})[timepoint];
+      if (!cell) {
+        mesh.material.color.set(0xeeeae0);
+        mesh.material.emissive.set(0x000000);
+        mesh.userData.tooltip = `${labelForSite(site)} · ${timepoint}: no swab collected`;
+      } else {
+        const css = colorForScore(cell.d, cell.within_baseline_noise);
+        const m = css.match(/rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
+        if (m) {
+          mesh.material.color.setRGB(parseInt(m[1])/255, parseInt(m[2])/255, parseInt(m[3])/255);
+        }
+        const intensity = Math.max(0, Math.min(1, cell.d - 0.4));
+        mesh.material.emissive.setRGB(intensity * 0.6, intensity * 0.18, 0.0);
+        const noiseTag = cell.within_baseline_noise ? " (within baseline noise)" : "";
+        mesh.userData.tooltip = `${labelForSite(site)} · ${timepoint}\nd = ${cell.d.toFixed(2)} [95% CI ${cell.ci_lo.toFixed(2)}–${cell.ci_hi.toFixed(2)}], n=${cell.n_baseline}${noiseTag}`;
+      }
+    }
+  }
+
+  return { setScores, canvas, pivot };
+}
+
+// =============================================================
 // Hero (unified single-screen view: tabs + body + stats + timeline)
 // =============================================================
 
 let selectedHeroCrew = "C001";
-let heroAvatar = null;
+let heroBody = null;       // 3D body (createHeroBody3D return) when available
+let heroAvatar = null;     // 2D SVG fallback Avatar2D when 3D fails
 
-function mountHero() {
-  // Tabs
+// Map the 4 hero stat tiles to their fine-grained system findings so the
+// auto-classified findings get embedded inside the right tile.
+const SYSTEM_CARD_TO_FINE = {
+  hematology:     ["red_cells", "white_cells", "platelets"],
+  metabolic:      ["renal", "hepatic", "metabolic", "protein"],
+  immune:         ["inflammation", "adaptive"],
+  cardiovascular: ["cardiac"],
+};
+
+async function mountHero() {
   const tabs = document.getElementById("hero-tabs");
   if (tabs) renderHeroTabs(tabs);
 
-  // Body host (Avatar2D with dynamic crewId getter)
   const host = document.getElementById("hero-body-host");
   if (host) {
-    heroAvatar = new Avatar2D(host, () => selectedHeroCrew, { interactive: true });
+    // Try the 3D astronaut first; fall back to the 2D SVG body if WebGL
+    // or the model load fails.
+    heroBody = await createHeroBody3D({
+      host,
+      onSiteClick: (site) => openDrilldown(selectedHeroCrew, site),
+    });
+    if (!heroBody) {
+      heroAvatar = new Avatar2D(host, () => selectedHeroCrew, { interactive: true });
+    }
   }
 
-  // Initial stats panel
   renderHeroStats();
-
-  // Timeline tick marks
   renderTimelineMarks();
 
-  // Sync hero data-crew attribute for color theming
   const hero = document.getElementById("hero");
   if (hero) hero.dataset.crew = selectedHeroCrew;
 
-  // Drilldown close button
   const closeBtn = document.querySelector(".drilldown-close");
   if (closeBtn) closeBtn.addEventListener("click", closeDrilldown);
+
+  // Initial body paint (now that the 3D body has loaded async).
+  paintHeroBody();
 }
 
 function renderHeroTabs(tabs) {
@@ -953,9 +1141,11 @@ function selectHeroCrew(crew) {
 }
 
 function paintHeroBody() {
-  if (!heroAvatar || !state.microbiome) return;
+  if (!state.microbiome) return;
   const tp = state.microbiome.timepoints[state.timepointIdx];
-  heroAvatar.setScores(state.microbiome.scores[selectedHeroCrew] || {}, tp);
+  const scoresForCrew = state.microbiome.scores[selectedHeroCrew] || {};
+  if (heroBody) heroBody.setScores(scoresForCrew, tp);
+  if (heroAvatar) heroAvatar.setScores(scoresForCrew, tp);
 }
 
 function renderHeroStats() {
@@ -971,8 +1161,16 @@ function renderHeroStats() {
   const overallIcon = CREW_STATUS_ICON[c.overall_status] || "·";
   const overallLabel = CREW_OVERALL_LABEL[c.overall_status] || c.overall_status || "";
 
-  // System tiles - click any to expand the timeline detail
-  const systemTiles = (c.systems || []).map(sys => `
+  // System tiles - click any to expand into both the per-checkpoint table
+  // AND the auto-classified fine-grained findings that roll up into this
+  // system card (e.g., expanding "Hematology" reveals the per-system
+  // findings for white_cells / red_cells / platelets).
+  const allFindings = (state.bloodwork && state.bloodwork.findings) || [];
+
+  const systemTiles = (c.systems || []).map(sys => {
+    const fineKeys = SYSTEM_CARD_TO_FINE[sys.system_id] || [];
+    const fineFindings = allFindings.filter(f => fineKeys.includes(f.system));
+    return `
     <details class="hero-sys sys-${escapeHtml(sys.current_status)} concern-${escapeHtml(sys.concern_level)}">
       <summary>
         <span class="hero-sys-icon">${SYSTEM_STATUS_ICON[sys.current_status] || "·"}</span>
@@ -998,9 +1196,15 @@ function renderHeroStats() {
             }).join("")}
           </tbody>
         </table>
+        ${fineFindings.length ? `
+          <h5 class="hero-sys-fine-title">Fine-grained findings (population-level, n=4)</h5>
+          <ul class="hero-sys-fine-list">
+            ${fineFindings.map(f => renderEmbeddedFinding(f)).join("")}
+          </ul>
+        ` : ""}
       </div>
     </details>
-  `).join("");
+  `;}).join("");
 
   // Top microbiome shifts at the current timepoint
   const tp = state.microbiome ? state.microbiome.timepoints[state.timepointIdx] : "";
@@ -1049,6 +1253,33 @@ function renderHeroStats() {
       openDrilldown(selectedHeroCrew, li.dataset.site);
     });
   });
+}
+
+// A compact rendering of a single auto-classified finding embedded inside
+// a hero system tile (no <details> wrapper here - it's already nested).
+function renderEmbeddedFinding(f) {
+  const tps = ["R+1", "R+45", "R+82"];
+  return `
+    <li class="hero-sys-fine status-${escapeHtml(f.overall_status || "no_data")}">
+      <div class="fine-headline">
+        <span class="fine-icon">${STATUS_ICON[f.overall_status] || "·"}</span>
+        <span class="fine-text">${escapeHtml(f.headline || "")}</span>
+      </div>
+      <div class="fine-tp-row">
+        ${tps.map(tp => {
+          const ts = (f.per_timepoint || {})[tp];
+          if (!ts || ts.status === "no_data") {
+            return `<span class="fine-tp tp-no_data"><span class="fine-tp-name">${escapeHtml(tp)}</span><span class="fine-tp-status">—</span></span>`;
+          }
+          return `<span class="fine-tp tp-${escapeHtml(ts.status)}">
+            <span class="fine-tp-name">${escapeHtml(tp)}</span>
+            <span class="fine-tp-status">${escapeHtml(STATUS_LABEL[ts.status] || ts.status)}</span>
+            <span class="fine-tp-counts">${ts.n_crew_up}↑ ${ts.n_crew_down}↓ of ${ts.n_total}</span>
+          </span>`;
+        }).join("")}
+      </div>
+    </li>
+  `;
 }
 
 function renderTimelineMarks() {
@@ -1101,10 +1332,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
-    safe("mountHero",      () => mountHero());
-    safe("wireEvents",     () => wireEvents());
-    safe("repaintAll",     () => repaintAll());
-    safe("renderFindings", () => renderFindings());
+    safe("mountHero",  () => mountHero());
+    safe("wireEvents", () => wireEvents());
+    safe("repaintAll", () => repaintAll());
   } catch (err) {
     console.error("Dashboard fatal load error:", err);
     document.getElementById("findings-list").innerHTML =
