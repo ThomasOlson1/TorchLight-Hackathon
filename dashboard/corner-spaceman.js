@@ -37,11 +37,12 @@ function createSpaceman({ hostId, gltf, flip, spinDir }) {
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  // Tighter FOV + larger distance so the astronaut fits head-to-feet
-  // with breathing room above the helmet and below the boots.
+  // Camera framing aims for ~0.35m of clearance above the helmet so the
+  // backpack / antenna / shoulder cuffs don't clip when the model spins.
+  // Vertical extent ~2.5m at distance 5.4m with FOV 26.
   const camera = new THREE.PerspectiveCamera(26, 1, 0.05, 50);
-  camera.position.set(0, 0.95, 4.6);
-  camera.lookAt(0, 0.95, 0);
+  camera.position.set(0, 1.05, 5.4);
+  camera.lookAt(0, 1.05, 0);
 
   scene.add(new THREE.AmbientLight(0xfff5e0, 0.65));
   const key = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -61,7 +62,7 @@ function createSpaceman({ hostId, gltf, flip, spinDir }) {
   // Without this rig, model.rotation.z = PI would swing the head down to
   // y=-1.8 (well below the camera frame) and we'd see only the boots.
   const pivot = new THREE.Group();
-  pivot.position.y = 0.95;
+  pivot.position.y = 1.05;
   scene.add(pivot);
 
   const centerer = new THREE.Group();
@@ -93,9 +94,10 @@ function createSpaceman({ hostId, gltf, flip, spinDir }) {
 (async function init() {
   const topLeftHost = document.getElementById("corner-spaceman");
   const bottomRightHost = document.getElementById("corner-spaceman-2");
-  [topLeftHost, bottomRightHost].forEach(h => h && applyTopOffset(h));
-  // Re-anchor (top-left only; bottom-right uses bottom: in CSS) on resize +
-  // after layout settles for late-loading webfonts.
+  // Top-left only: anchor to the (variable-height) honesty strip's
+  // bottom edge. The bottom-right host stays anchored via CSS
+  // (bottom + right), so we must NOT set its `top`.
+  if (topLeftHost) applyTopOffset(topLeftHost);
   function reanchor() { if (topLeftHost) applyTopOffset(topLeftHost); }
   window.addEventListener("resize", reanchor);
   requestAnimationFrame(() => requestAnimationFrame(reanchor));
