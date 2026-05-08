@@ -433,128 +433,6 @@ function renderCrewSummaries() {
 }
 
 // =============================================================
-// System summaries (auxiliary aggregated view)
-// =============================================================
-
-const SUMMARY_STATUS_ICON = {
-  trended_up:   "▲",
-  trended_down: "▼",
-  mixed:        "◆",
-  stable:       "—",
-  no_data:      "·",
-};
-
-const SUMMARY_STATUS_LABEL = {
-  trended_up:   "trended up overall",
-  trended_down: "trended down overall",
-  mixed:        "mixed shifts across the mission",
-  stable:       "stable across the mission",
-  no_data:      "no data",
-};
-
-// Per-checkpoint mini status: derive direction class for the strip dots.
-function checkpointDotClass(f) {
-  if (f.headline_pct == null) return "stable";
-  if (f.headline_pct >  3) return "up";
-  if (f.headline_pct < -3) return "down";
-  return "stable";
-}
-
-function renderSystemSummaries() {
-  const root = document.getElementById("summary-grid");
-  if (!root) return;
-  root.innerHTML = "";
-  const summaries = (state.bloodwork && state.bloodwork.system_summaries) || [];
-  if (!summaries.length) {
-    root.innerHTML = `<p class="muted">No system summaries available.</p>`;
-    return;
-  }
-
-  for (const s of summaries) {
-    const card = document.createElement("details");
-    card.className = `summary-card status-${s.overall_status || "stable"}`;
-
-    const statusIcon = SUMMARY_STATUS_ICON[s.overall_status] || "—";
-    const statusLabel = SUMMARY_STATUS_LABEL[s.overall_status] || "";
-
-    // Tiny timeline strip: one dot per checkpoint, colored by direction.
-    const stripCells = (s.findings || []).map(f => `
-      <div class="cp-cell dot-${checkpointDotClass(f)}">
-        <span class="cp-cell-label">${escapeHtml(f.checkpoint)}</span>
-        <span class="cp-cell-dot" aria-hidden="true"></span>
-      </div>
-    `).join("");
-
-    // Concern badge — shown in closed state so the reader can tell
-    // "expected" from "follow-up advised" without opening the card.
-    const concern = s.concern_level || "expected";
-    const concernLabel = ({
-      expected:  "expected",
-      watch:     "worth watching",
-      follow_up: "follow-up advised",
-    })[concern] || concern;
-
-    // Closed state: title, status, concern badge, timeline strip, one-line clinical context.
-    const summary = `
-      <summary>
-        <span class="summary-icon" aria-hidden="true">${statusIcon}</span>
-        <h3 class="summary-card-title">${escapeHtml(s.label)}</h3>
-        <span class="summary-card-status-mini">${escapeHtml(statusLabel)}</span>
-        <span class="concern-pill concern-${concern}" title="${escapeHtml(s.clinical_context || "")}">${escapeHtml(concernLabel)}</span>
-        <div class="cp-strip" aria-hidden="true">${stripCells}</div>
-        ${s.clinical_context ? `<p class="clinical-context">${escapeHtml(s.clinical_context)}</p>` : ""}
-      </summary>
-    `;
-
-    // Expanded state: per-crew matrix. Rows = post-flight checkpoints, cols = crew.
-    // The first finding (L-3 baseline) gets a single line; the rest go into the matrix.
-    const crew = (state.bloodwork && state.bloodwork.crew) || ["C001","C002","C003","C004"];
-    const baselineFinding = (s.findings || []).find(f => f.checkpoint === "L-3");
-    const postFindings = (s.findings || []).filter(f => f.checkpoint !== "L-3");
-
-    const pctCell = (v) => {
-      if (v == null) return `<td class="pct-cell muted">—</td>`;
-      const dir = v > 3 ? "up" : (v < -3 ? "down" : "stable");
-      const sign = v > 0 ? "+" : "";
-      return `<td class="pct-cell pct-${dir}">${sign}${v}%</td>`;
-    };
-
-    let body = `<div class="summary-card-detail">`;
-    if (baselineFinding) {
-      body += `<p class="summary-baseline-note">${escapeHtml(baselineFinding.headline)}</p>`;
-    }
-    body += `
-      <table class="crew-matrix">
-        <thead>
-          <tr>
-            <th></th>
-            ${crew.map(c => `<th>${escapeHtml(c)}</th>`).join("")}
-            <th class="avg-col">avg</th>
-          </tr>
-        </thead>
-        <tbody>
-    `;
-    for (const f of postFindings) {
-      const perCrew = f.per_crew_pct || {};
-      body += `<tr>
-        <th class="cp-row">${escapeHtml(f.checkpoint)}</th>
-        ${crew.map(c => pctCell(perCrew[c])).join("")}
-        ${pctCell(f.headline_pct)}
-      </tr>`;
-    }
-    body += `</tbody></table>`;
-    body += `<p class="crew-matrix-key muted">% change vs each crew's pre-flight baseline (mean of L-92, L-44, L-3) for ${escapeHtml(s.headline_label)}.</p>`;
-    if (s.sources && s.sources.length) {
-      body += `<p class="summary-card-sources"><strong>Sources:</strong> ${s.sources.map(escapeHtml).join("; ")}</p>`;
-    }
-    body += `<p class="summary-card-meta muted">${s.n_metrics_tracked} metrics tracked across the panel.</p></div>`;
-
-    card.innerHTML = summary + body;
-    root.appendChild(card);
-  }
-}
-
-// =============================================================
 // Findings (per-system detail cards — auxiliary view)
 // =============================================================
 
@@ -724,7 +602,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     safe("wireEvents",          () => wireEvents());
     safe("repaintAll",          () => repaintAll());
     safe("renderCrewSummaries",   () => renderCrewSummaries());
-    safe("renderSystemSummaries", () => renderSystemSummaries());
     safe("renderFindings",        () => renderFindings());
   } catch (err) {
     console.error("Dashboard fatal load error:", err);
@@ -741,7 +618,6 @@ function safe(label, fn) {
     const anchors = {
       mountAvatars:           "avatar-grid",
       renderCrewSummaries:    "crew-grid",
-      renderSystemSummaries:  "summary-grid",
       renderFindings:         "findings-list",
     };
     const id = anchors[label];
