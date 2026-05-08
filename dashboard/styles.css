@@ -126,78 +126,129 @@ section.panel .panel-subtitle {
   font-size: 14px;
 }
 
-/* ---------- System summary grid (4 high-level cards) ---------- */
+/* ---------- System summary grid (4 high-level cards, click to expand) ---------- */
 
 #summary-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 12px;
   margin-top: 6px;
 }
 
 .summary-card {
   background: #fff;
   border: 1px solid var(--border);
-  border-top: 4px solid #b0b8c2;
-  border-radius: var(--radius);
-  padding: 16px 18px;
-  box-shadow: var(--shadow);
-  display: flex;
-  flex-direction: column;
+  border-left: 4px solid #b0b8c2;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
 }
 
-.summary-card.status-trended_up   { border-top-color: #d94a1f; }
-.summary-card.status-trended_down { border-top-color: #2956a8; }
-.summary-card.status-mixed        { border-top-color: #b08000; }
-.summary-card.status-stable       { border-top-color: #6b9e6e; }
-.summary-card.status-no_data      { border-top-color: #c8c8c8; }
+.summary-card.status-trended_up   { border-left-color: #d94a1f; }
+.summary-card.status-trended_down { border-left-color: #2956a8; }
+.summary-card.status-mixed        { border-left-color: #b08000; }
+.summary-card.status-stable       { border-left-color: #6b9e6e; }
+.summary-card.status-no_data      { border-left-color: #c8c8c8; }
 
-.summary-card-header { margin-bottom: 8px; }
+.summary-card[open] { box-shadow: var(--shadow); }
 
-.summary-card-title {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  margin: 0 0 2px;
+.summary-card > summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 12px 14px;
+  display: grid;
+  grid-template-columns: 18px 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  row-gap: 6px;
+  align-items: center;
+  user-select: none;
 }
-
-.summary-card-title h3 {
-  margin: 0;
-  font-size: 17px;
-  letter-spacing: -0.005em;
-}
+.summary-card > summary::-webkit-details-marker { display: none; }
+.summary-card > summary::marker { display: none; }
+.summary-card > summary:hover { background: #f7f8fa; }
 
 .summary-icon {
+  grid-row: 1;
+  grid-column: 1;
   font-size: 16px;
-  width: 18px;
   text-align: center;
-  display: inline-block;
 }
-
 .summary-card.status-trended_up   .summary-icon { color: #d94a1f; }
 .summary-card.status-trended_down .summary-icon { color: #2956a8; }
 .summary-card.status-mixed        .summary-icon { color: #b08000; }
 .summary-card.status-stable       .summary-icon { color: #4a7d4d; }
 
-.summary-card-subtitle {
-  margin: 0 0 2px;
-  font-size: 12px;
-  color: var(--text-muted);
+.summary-card-title {
+  grid-row: 1;
+  grid-column: 2;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.005em;
 }
 
-.summary-card-status {
-  margin: 4px 0 0;
-  font-size: 13px;
-  font-weight: 600;
+.summary-card-status-mini {
+  grid-row: 1;
+  grid-column: 3;
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.cp-strip {
+  grid-row: 2;
+  grid-column: 2 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.cp-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 4px 5px;
+  background: #f7f8fa;
+  border-radius: 3px;
+  border: 1px solid #ebeef2;
+}
+.cp-cell-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+.cp-cell-dot {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #c8d0d8;
+}
+.cp-cell.dot-up      .cp-cell-dot { background: #d94a1f; }
+.cp-cell.dot-down    .cp-cell-dot { background: #2956a8; }
+.cp-cell.dot-stable  .cp-cell-dot { background: #6b9e6e; }
+
+.summary-card-detail {
+  padding: 4px 14px 14px;
+  border-top: 1px solid var(--border);
+  background: #fbfcfd;
+}
+
+.summary-card-meta {
+  margin: 8px 0 0;
+  font-size: 11px;
 }
 
 .summary-timeline {
   list-style: none;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .summary-finding {

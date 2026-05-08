@@ -341,6 +341,14 @@ const SUMMARY_STATUS_LABEL = {
   no_data:      "no data",
 };
 
+// Per-checkpoint mini status: derive direction class for the strip dots.
+function checkpointDotClass(f) {
+  if (f.headline_pct == null) return "stable";
+  if (f.headline_pct >  3) return "up";
+  if (f.headline_pct < -3) return "down";
+  return "stable";
+}
+
 function renderSystemSummaries() {
   const root = document.getElementById("summary-grid");
   if (!root) return;
@@ -352,30 +360,38 @@ function renderSystemSummaries() {
   }
 
   for (const s of summaries) {
-    const card = document.createElement("article");
+    const card = document.createElement("details");
     card.className = `summary-card status-${s.overall_status || "stable"}`;
 
     const statusIcon = SUMMARY_STATUS_ICON[s.overall_status] || "—";
-    const statusLabel = SUMMARY_STATUS_LABEL[s.overall_status] || s.overall_status || "";
+    const statusLabel = SUMMARY_STATUS_LABEL[s.overall_status] || "";
 
-    let html = `
-      <header class="summary-card-header">
-        <div class="summary-card-title">
-          <span class="summary-icon" aria-hidden="true">${statusIcon}</span>
-          <h3>${escapeHtml(s.label)}</h3>
-        </div>
-        <p class="summary-card-subtitle">${escapeHtml(s.subtitle || "")}</p>
-        <p class="summary-card-status">${escapeHtml(statusLabel)} &middot; <span class="muted">${s.n_metrics_tracked} metrics tracked</span></p>
-      </header>
-      <ol class="summary-timeline">
+    // Tiny timeline strip: one dot per checkpoint, colored by direction.
+    const stripCells = (s.findings || []).map(f => `
+      <div class="cp-cell dot-${checkpointDotClass(f)}">
+        <span class="cp-cell-label">${escapeHtml(f.checkpoint)}</span>
+        <span class="cp-cell-dot" aria-hidden="true"></span>
+      </div>
+    `).join("");
+
+    // Closed state: just title, status, and the timeline strip.
+    const summary = `
+      <summary>
+        <span class="summary-icon" aria-hidden="true">${statusIcon}</span>
+        <h3 class="summary-card-title">${escapeHtml(s.label)}</h3>
+        <span class="summary-card-status-mini">${escapeHtml(statusLabel)}</span>
+        <div class="cp-strip" aria-hidden="true">${stripCells}</div>
+      </summary>
     `;
 
+    // Expanded state: the timeline list, sources.
+    let body = `<div class="summary-card-detail"><ol class="summary-timeline">`;
     for (const f of (s.findings || [])) {
       const pctBadge = (f.headline_pct != null)
         ? `<span class="pct-badge ${f.headline_pct > 0 ? "up" : (f.headline_pct < 0 ? "down" : "muted")}">${f.headline_pct > 0 ? "+" : ""}${f.headline_pct}%</span>`
         : "";
-      html += `
-        <li class="summary-finding cp-${escapeHtml(f.checkpoint)}">
+      body += `
+        <li class="summary-finding">
           <div class="summary-finding-cp">
             <span class="cp-tag">${escapeHtml(f.checkpoint)}</span>
             ${pctBadge}
@@ -387,13 +403,13 @@ function renderSystemSummaries() {
         </li>
       `;
     }
-    html += `</ol>`;
-
+    body += `</ol>`;
     if (s.sources && s.sources.length) {
-      html += `<p class="summary-card-sources"><strong>Sources:</strong> ${s.sources.map(escapeHtml).join("; ")}</p>`;
+      body += `<p class="summary-card-sources"><strong>Sources:</strong> ${s.sources.map(escapeHtml).join("; ")}</p>`;
     }
+    body += `<p class="summary-card-meta muted">${s.n_metrics_tracked} metrics tracked</p></div>`;
 
-    card.innerHTML = html;
+    card.innerHTML = summary + body;
     root.appendChild(card);
   }
 }
