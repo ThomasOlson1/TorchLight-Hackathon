@@ -96,17 +96,130 @@ function colorForScore(d, withinBaselineNoise) {
 }
 
 // =============================================================
-// Avatar registry (one entry per crew, rendered as 2D SVG)
+// Microbiome character-select: one big featured body + 4 roster tiles
 // =============================================================
 
-const avatars = new Map();  // crew_id -> Avatar2D instance
+const avatars = new Map();   // crew_id -> Avatar2D (small roster body)
+let stageAvatar = null;      // the big featured body (shows selected crew)
+let selectedMicrobiomeCrew = "C001";
 
 function mountAvatars() {
-  document.querySelectorAll("figure[data-crew] .avatar").forEach(host => {
-    const fig = host.closest("figure[data-crew]");
-    const crew = fig.dataset.crew;
-    avatars.set(crew, new Avatar2D(host, crew));
+  // Build the roster: 4 buttons, each containing a small static body.
+  const roster = document.getElementById("microbiome-roster");
+  if (roster) {
+    roster.innerHTML = "";
+    const crewIds = (state.microbiome && state.microbiome.crew) || ["C001","C002","C003","C004"];
+    if (!crewIds.includes(selectedMicrobiomeCrew)) selectedMicrobiomeCrew = crewIds[0];
+
+    crewIds.forEach((crew, i) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "roster-tile";
+      btn.dataset.crew = crew;
+      btn.dataset.index = String(i);
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", crew === selectedMicrobiomeCrew ? "true" : "false");
+      btn.innerHTML = `
+        <span class="roster-frame">
+          <span class="roster-corner rc-tl"></span>
+          <span class="roster-corner rc-tr"></span>
+          <span class="roster-corner rc-bl"></span>
+          <span class="roster-corner rc-br"></span>
+        </span>
+        <span class="roster-id">${escapeHtml(crew)}</span>
+        <div class="roster-body"></div>
+        <span class="roster-ready">${crew === selectedMicrobiomeCrew ? "READY" : "SELECT"}</span>
+      `;
+      btn.addEventListener("click", () => selectMicrobiomeCrewById(crew));
+      btn.addEventListener("keydown", (e) => {
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = crewIds[(i + 1) % crewIds.length];
+          selectMicrobiomeCrewById(next);
+          focusActiveRosterTile();
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = crewIds[(i - 1 + crewIds.length) % crewIds.length];
+          selectMicrobiomeCrewById(prev);
+          focusActiveRosterTile();
+        }
+      });
+      roster.appendChild(btn);
+
+      // Tiny non-interactive body inside the tile.
+      const bodyHost = btn.querySelector(".roster-body");
+      avatars.set(crew, new Avatar2D(bodyHost, crew, { interactive: false }));
+    });
+  }
+
+  // Build the big featured body. Its crewId is dynamic so re-renders aren't
+  // needed when the user picks a different crew - we just call setScores.
+  const stageHost = document.getElementById("featured-body-host");
+  if (stageHost) {
+    stageAvatar = new Avatar2D(stageHost, () => selectedMicrobiomeCrew, { interactive: true });
+  }
+  refreshFeaturedHeader();
+}
+
+function refreshFeaturedHeader() {
+  const idEl = document.getElementById("stage-crew-id");
+  if (idEl) idEl.textContent = selectedMicrobiomeCrew;
+  const featured = document.getElementById("stage-featured");
+  if (featured) featured.dataset.crew = selectedMicrobiomeCrew;
+}
+
+function selectMicrobiomeCrewById(crew) {
+  if (!crew || crew === selectedMicrobiomeCrew) return;
+  const crewIds = (state.microbiome && state.microbiome.crew) || [];
+  const oldIdx = crewIds.indexOf(selectedMicrobiomeCrew);
+  const newIdx = crewIds.indexOf(crew);
+  selectedMicrobiomeCrew = crew;
+
+  // Update roster tile states + READY/SELECT label
+  document.querySelectorAll("#microbiome-roster .roster-tile").forEach(btn => {
+    const isSel = btn.dataset.crew === crew;
+    btn.setAttribute("aria-selected", isSel ? "true" : "false");
+    const r = btn.querySelector(".roster-ready");
+    if (r) r.textContent = isSel ? "READY" : "SELECT";
   });
+
+  // Animate featured: slide out, swap data, slide in.
+  const featured = document.getElementById("stage-featured");
+  const dir = (newIdx > oldIdx) ? "left" : "right";
+  if (featured) {
+    featured.classList.remove("slide-in-left", "slide-in-right");
+    featured.classList.add(`slide-out-${dir}`);
+    featured.addEventListener("animationend", function onOut() {
+      featured.removeEventListener("animationend", onOut);
+      featured.classList.remove(`slide-out-${dir}`);
+      refreshFeaturedHeader();
+      paintFeaturedBody();
+      featured.classList.add(`slide-in-${dir === "left" ? "right" : "left"}`);
+    }, { once: true });
+  } else {
+    refreshFeaturedHeader();
+    paintFeaturedBody();
+  }
+
+  // Sync the bloodwork side's selectCrew (so cross-section "selected" stays in step).
+  selectCrew(crew);
+
+  // If the drilldown is open, update it for the new crew.
+  if (activeDrilldown) {
+    activeDrilldown.crew = crew;
+    refreshDrilldown();
+  }
+}
+
+function focusActiveRosterTile() {
+  const active = document.querySelector(`#microbiome-roster .roster-tile[aria-selected="true"]`);
+  if (active && document.activeElement !== active) active.focus();
+}
+
+function paintFeaturedBody() {
+  if (!stageAvatar || !state.microbiome) return;
+  const tp = state.microbiome.timepoints[state.timepointIdx];
+  stageAvatar.setScores(state.microbiome.scores[selectedMicrobiomeCrew] || {}, tp);
 }
 
 // =============================================================
@@ -159,18 +272,32 @@ const AVATAR_SVG_TEMPLATE = `
 `;
 
 class Avatar2D {
-  constructor(host, crewId) {
-    this.crewId = crewId;
-    host.innerHTML = AVATAR_SVG_TEMPLATE.replace(/\{ID\}/g, crewId);
+  /**
+   * @param {HTMLElement} host
+   * @param {string|Function} crewIdOrGetter  static id or () => id (for the stage)
+   * @param {Object} [opts]
+   * @param {boolean} [opts.interactive=true]  if false, regions don't open drilldown on click
+   */
+  constructor(host, crewIdOrGetter, opts = {}) {
+    const interactive = opts.interactive !== false;
+    this._getCrewId = typeof crewIdOrGetter === "function"
+      ? crewIdOrGetter
+      : () => crewIdOrGetter;
+    host.innerHTML = AVATAR_SVG_TEMPLATE.replace(/\{ID\}/g, this._getCrewId());
     this.svg = host.querySelector("svg");
     this.regions = new Map();
     this.svg.querySelectorAll("[data-region]").forEach(node => {
       this.regions.set(node.dataset.region, node);
-      node.addEventListener("click", (e) => {
-        e.stopPropagation();
-        openDrilldown(crewId, node.dataset.region);
-        selectCrew(crewId);
-      });
+      if (interactive) {
+        node.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const crew = this._getCrewId();
+          openDrilldown(crew, node.dataset.region);
+          selectCrew(crew);
+        });
+      } else {
+        node.style.pointerEvents = "none";
+      }
     });
   }
 
@@ -199,10 +326,12 @@ class Avatar2D {
 function repaintAll() {
   const tp = state.microbiome.timepoints[state.timepointIdx];
   document.getElementById("timepoint-label").textContent = tp;
+  // Roster tiles (small static bodies)
   for (const [crew, av] of avatars) {
-    const crewScores = state.microbiome.scores[crew] || {};
-    av.setScores(crewScores, tp);
+    av.setScores(state.microbiome.scores[crew] || {}, tp);
   }
+  // Featured stage body
+  paintFeaturedBody();
   refreshDrilldown();
 }
 
@@ -722,22 +851,8 @@ function wireEvents() {
     repaintAll();
   });
 
-  // Avatar grid: clicking the figcaption / canvas chrome (not a hotspot) selects
-  // the crew. Region clicks are wired inside Avatar2D and call selectCrew()
-  // themselves, so we only need a fallback here.
-  const grid = document.getElementById("avatar-grid");
-  grid.addEventListener("click", (e) => {
-    const figure = e.target.closest("figure[data-crew]");
-    if (!figure) return;
-    // Don't double-fire if the 3D layer already handled it.
-    if (e.target.classList && e.target.classList.contains("avatar-canvas")) return;
-    selectCrew(figure.dataset.crew);
-  });
-  grid.addEventListener("keydown", (e) => {
-    if (e.key !== "Enter" && e.key !== " ") return;
-    const figure = e.target.closest("figure[data-crew]");
-    if (figure) { e.preventDefault(); selectCrew(figure.dataset.crew); }
-  });
+  // The microbiome roster (.roster-tile) wires its own click + arrow-key
+  // handlers in mountAvatars(). No avatar-grid fallback needed anymore.
 }
 
 // =============================================================

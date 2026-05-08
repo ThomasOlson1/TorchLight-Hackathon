@@ -1383,68 +1383,314 @@ section.panel > details[open] > summary::after { content: " ↑"; }
   font-family: var(--font-mono);
 }
 
-#avatar-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
-}
+/* ---------- Microbiome hero (Overwatch-style character stage) ---------- */
 
-#avatar-grid figure {
-  margin: 0;
-  padding: 14px 10px 12px;
-  background: var(--surface);
-  border: 2px solid var(--line);
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: border-color var(--t-fast), transform var(--t-fast), opacity var(--t-mid), box-shadow var(--t-fast);
-  text-align: center;
+.hero-microbiome {
+  /* Break out of the cream surface; this section gets a dark, dramatic stage. */
+  background: linear-gradient(180deg, #181821 0%, #221c2e 50%, #1a1822 100%);
+  color: #f4eedd;
+  border: none;
+  padding: 36px 36px 40px;
   position: relative;
-}
-
-#avatar-grid figure:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
-}
-
-#avatar-grid figure.selected {
-  border-color: var(--accent);
-  background: linear-gradient(180deg, var(--surface), var(--accent-soft));
-  box-shadow: 0 0 0 2px var(--accent), var(--shadow-sm);
-}
-
-#avatar-grid.has-selection figure:not(.selected) { opacity: 0.4; }
-
-#avatar-grid figcaption {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.04em;
-  margin: 0 0 6px;
-  color: var(--ink);
-}
-
-#avatar-grid .avatar {
-  line-height: 0;
-  position: relative;
-  width: 100%;
-  background: linear-gradient(180deg, var(--bg-soft), var(--bg));
   overflow: hidden;
 }
-#avatar-grid .body-svg {
-  width: 100%;
-  height: auto;
-  max-height: 340px;
-  display: block;
+.hero-microbiome::before {
+  /* Vignette glow at the edges */
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60% 80% at 30% 30%, rgba(255, 107, 26, 0.18), transparent 70%),
+    radial-gradient(60% 80% at 80% 80%, rgba(37, 99, 184, 0.16), transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+.hero-microbiome > * { position: relative; z-index: 1; }
+
+.hero-microbiome .hero-header h2 {
+  color: #fff;
+  font-size: 32px;
+  letter-spacing: -0.01em;
+}
+.hero-microbiome .panel-subtitle {
+  color: rgba(244, 238, 221, 0.78);
+  max-width: 84ch;
+  margin-bottom: 22px;
 }
 
-.avatar-hint {
-  margin: 14px 0 0;
+/* The big featured stage where the selected crew's body lives. */
+.microbiome-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 360px);
+  gap: 28px;
+  min-height: 62vh;
+  background: rgba(8, 6, 14, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 32px 30px;
+  margin-bottom: 22px;
+  /* HUD-corner cut on top-right + bottom-left */
+  clip-path: polygon(
+    0 0,
+    calc(100% - 28px) 0,
+    100% 28px,
+    100% 100%,
+    28px 100%,
+    0 calc(100% - 28px)
+  );
+}
+
+.stage-glow {
+  position: absolute;
+  inset: -50px;
+  background: radial-gradient(circle at 35% 50%, rgba(255, 107, 26, 0.25), transparent 60%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+  animation: stageGlow 6s ease-in-out infinite alternate;
+}
+@keyframes stageGlow {
+  from { opacity: 0.65; transform: translateX(0); }
+  to   { opacity: 1.0;  transform: translateX(40px); }
+}
+
+.stage-grid-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(0deg,  transparent 0 39px, rgba(255,255,255,0.04) 39px 40px),
+    repeating-linear-gradient(90deg, transparent 0 39px, rgba(255,255,255,0.04) 39px 40px);
+  pointer-events: none;
+  z-index: 0;
+  mask-image: radial-gradient(ellipse 80% 80% at 50% 50%, #000 30%, transparent 80%);
+}
+
+.stage-featured {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  justify-items: center;
   text-align: center;
+}
+
+.stage-featured.slide-out-left  { animation: slideOutLeft  180ms ease-in forwards; }
+.stage-featured.slide-out-right { animation: slideOutRight 180ms ease-in forwards; }
+.stage-featured.slide-in-left   { animation: slideInLeft   240ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+.stage-featured.slide-in-right  { animation: slideInRight  240ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+.stage-crew-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.stage-crew-label {
   font-family: var(--font-mono);
   font-size: 11px;
+  letter-spacing: 0.32em;
+  color: rgba(244, 238, 221, 0.55);
+  text-transform: uppercase;
+}
+.stage-crew-id {
+  font-family: var(--font-mono);
+  font-size: 80px;
+  font-weight: 700;
   letter-spacing: 0.04em;
-  color: var(--muted);
+  line-height: 1;
+  color: #fff;
+  text-shadow:
+    0 0 30px rgba(255, 107, 26, 0.55),
+    0 0 8px rgba(255, 107, 26, 0.4);
+}
+.stage-featured[data-crew="C001"] .stage-crew-id { text-shadow: 0 0 30px rgba(37, 99, 184, 0.55), 0 0 8px rgba(37, 99, 184, 0.45); }
+.stage-featured[data-crew="C002"] .stage-crew-id { text-shadow: 0 0 30px rgba(255, 107, 26, 0.55), 0 0 8px rgba(255, 107, 26, 0.45); }
+.stage-featured[data-crew="C003"] .stage-crew-id { text-shadow: 0 0 30px rgba(31, 122, 107, 0.55), 0 0 8px rgba(31, 122, 107, 0.45); }
+.stage-featured[data-crew="C004"] .stage-crew-id { text-shadow: 0 0 30px rgba(181, 50, 115, 0.55), 0 0 8px rgba(181, 50, 115, 0.45); }
+
+.stage-body {
+  width: 100%;
+  max-width: 520px;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stage-body .body-svg {
+  width: 100%;
+  height: auto;
+  max-height: 56vh;
+  filter: drop-shadow(0 20px 40px rgba(0, 0, 0, 0.55));
+}
+
+.stage-instruction {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(244, 238, 221, 0.55);
+}
+
+/* Drilldown lives in the right column of the stage on wide viewports.
+   On narrow viewports it wraps below the body. */
+.stage-drilldown {
+  background: rgba(244, 238, 221, 0.96);
+  color: var(--ink);
+  padding: 22px 22px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  align-self: stretch;
+  overflow: auto;
+  max-height: 62vh;
+}
+.stage-drilldown[hidden] { display: none; }
+
+/* The dark stage flips the inner SVG body to read against dark background. */
+.hero-microbiome .body-fill {
+  fill: rgba(255, 240, 213, 0.85);
+  stroke: rgba(255, 240, 213, 0.45);
+}
+.hero-microbiome .figure-label { fill: rgba(244, 238, 221, 0.5); }
+.hero-microbiome .region { stroke: rgba(255, 255, 255, 0.7); stroke-width: 0.7; }
+
+/* Microbiome controls (slider) */
+.microbiome-controls {
+  margin: 6px 0 18px;
+}
+.hero-microbiome #timepoint-slider-wrap {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px dashed rgba(255, 255, 255, 0.15);
+  color: rgba(244, 238, 221, 0.85);
+}
+.hero-microbiome #timepoint-slider-wrap label,
+.hero-microbiome .timepoint-help { color: rgba(244, 238, 221, 0.6); }
+.hero-microbiome #timepoint-label { color: var(--accent); background: rgba(255, 107, 26, 0.16); }
+
+/* Roster strip: 4 angular tiles, like a fighting-game character roster. */
+.microbiome-roster {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 10px 0 22px;
+}
+
+.roster-tile {
+  position: relative;
+  appearance: none;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 4px solid var(--muted);
+  padding: 12px 10px 18px;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 6px;
+  align-items: center;
+  justify-items: center;
+  min-height: 200px;
+  transition:
+    transform var(--t-fast),
+    box-shadow var(--t-fast),
+    border-color var(--t-fast),
+    background var(--t-fast);
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    0 100%);
+}
+.roster-tile[data-crew="C001"] { border-top-color: var(--crew-c001); }
+.roster-tile[data-crew="C002"] { border-top-color: var(--crew-c002); }
+.roster-tile[data-crew="C003"] { border-top-color: var(--crew-c003); }
+.roster-tile[data-crew="C004"] { border-top-color: var(--crew-c004); }
+
+.roster-tile:hover {
+  background: rgba(255, 255, 255, 0.10);
+  transform: translateY(-2px);
+}
+.roster-tile[aria-selected="true"] {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.16), rgba(255, 107, 26, 0.20));
+  border-color: var(--accent);
+  border-top-width: 6px;
+  box-shadow:
+    0 0 0 2px var(--accent),
+    0 14px 36px rgba(255, 107, 26, 0.35);
+  transform: translateY(-3px);
+}
+.roster-tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.roster-frame { position: absolute; inset: 0; pointer-events: none; }
+.roster-corner {
+  position: absolute;
+  width: 16px; height: 16px;
+  border: 2px solid var(--accent);
+  opacity: 0;
+  transition: opacity var(--t-mid);
+}
+.rc-tl { top: -2px;    left: -2px;    border-right: 0; border-bottom: 0; }
+.rc-tr { top: -2px;    right: -2px;   border-left: 0;  border-bottom: 0; }
+.rc-bl { bottom: -2px; left: -2px;    border-right: 0; border-top: 0; }
+.rc-br { bottom: 14px; right: 14px;   border-left: 0;  border-top: 0; }
+.roster-tile[aria-selected="true"] .roster-corner { opacity: 1; }
+
+.roster-id {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(244, 238, 221, 0.95);
+}
+.roster-tile[data-crew="C001"] .roster-id { color: var(--crew-c001); }
+.roster-tile[data-crew="C002"] .roster-id { color: var(--crew-c002); }
+.roster-tile[data-crew="C003"] .roster-id { color: var(--crew-c003); }
+.roster-tile[data-crew="C004"] .roster-id { color: var(--crew-c004); }
+
+.roster-body {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.roster-body .body-svg {
+  width: 100%;
+  height: auto;
+  max-height: 140px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.roster-ready {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(244, 238, 221, 0.45);
+}
+.roster-tile[aria-selected="true"] .roster-ready {
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(255, 107, 26, 0.7);
+}
+
+/* Hero legend: dark-theme adjustment */
+.hero-microbiome #legend {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(244, 238, 221, 0.7);
+}
+
+/* Narrow viewports: drilldown stacks under the body, roster collapses to 2x2 */
+@media (max-width: 1100px) {
+  .microbiome-stage { grid-template-columns: 1fr; }
+  .stage-drilldown { max-height: none; }
+}
+@media (max-width: 700px) {
+  .microbiome-roster { grid-template-columns: repeat(2, 1fr); }
+  .stage-crew-id { font-size: 56px; }
+  .hero-microbiome { padding: 24px 18px 28px; }
 }
 
 /* SVG body styling */

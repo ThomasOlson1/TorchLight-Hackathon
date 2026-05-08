@@ -69,42 +69,51 @@
     </section>
 
 
-    <section class="panel" id="avatar-section">
-      <h2>Microbiome: where on the body did things shift?</h2>
-      <p class="panel-subtitle">
-        For each crew member, color shows how far that body site's microbial community has drifted from
-        their <em>own</em> pre-flight baseline (Bray–Curtis distance). Click a region to see which organisms
-        drove the shift.
-      </p>
+    <section class="panel hero-microbiome" id="avatar-section">
+      <header class="hero-header">
+        <h2>Microbiome: where on the body did things shift?</h2>
+        <p class="panel-subtitle">
+          For each crew member, color shows how far that body site's microbial community has drifted from
+          their <em>own</em> pre-flight baseline (Bray–Curtis distance). Click a region to see which organisms
+          drove the shift.
+        </p>
+      </header>
 
-      <div id="timepoint-slider-wrap">
-        <label for="timepoint">Timepoint</label>
-        <input type="range" id="timepoint" min="0" max="7" value="0" step="1" aria-describedby="timepoint-help">
-        <span id="timepoint-label" aria-live="polite">L-92</span>
-      </div>
-      <p class="timepoint-help" id="timepoint-help">
-        L = days before launch · FD = flight day · R = days after return.
-      </p>
+      <div class="microbiome-stage" id="microbiome-stage">
+        <div class="stage-glow" aria-hidden="true"></div>
+        <div class="stage-grid-overlay" aria-hidden="true"></div>
 
-      <div id="avatar-grid" role="group" aria-label="Crew member microbiome avatars">
-        <figure data-crew="C001" tabindex="0">
-          <figcaption>C001</figcaption>
-          <div class="avatar"></div>
-        </figure>
-        <figure data-crew="C002" tabindex="0">
-          <figcaption>C002</figcaption>
-          <div class="avatar"></div>
-        </figure>
-        <figure data-crew="C003" tabindex="0">
-          <figcaption>C003</figcaption>
-          <div class="avatar"></div>
-        </figure>
-        <figure data-crew="C004" tabindex="0">
-          <figcaption>C004</figcaption>
-          <div class="avatar"></div>
-        </figure>
+        <div class="stage-featured" id="stage-featured">
+          <div class="stage-crew-banner">
+            <span class="stage-crew-label">CREW</span>
+            <span class="stage-crew-id" id="stage-crew-id">C001</span>
+          </div>
+          <div class="stage-body" id="featured-body-host"></div>
+          <p class="stage-instruction">Click any colored region for taxa drilldown</p>
+        </div>
+
+        <aside id="drilldown" class="stage-drilldown" hidden>
+          <header>
+            <h3 id="drilldown-title">Drill-down</h3>
+            <span class="crew-tag" id="drilldown-tag"></span>
+          </header>
+          <p id="drilldown-summary"></p>
+          <div id="drilldown-content"></div>
+        </aside>
       </div>
-      <p class="avatar-hint">Click any colored region for taxa drilldown</p>
+
+      <div class="microbiome-controls">
+        <div id="timepoint-slider-wrap">
+          <label for="timepoint">Timepoint</label>
+          <input type="range" id="timepoint" min="0" max="7" value="0" step="1" aria-describedby="timepoint-help">
+          <span id="timepoint-label" aria-live="polite">L-92</span>
+        </div>
+        <p class="timepoint-help" id="timepoint-help">
+          L = days before launch · FD = flight day · R = days after return.
+        </p>
+      </div>
+
+      <nav id="microbiome-roster" class="microbiome-roster" role="tablist" aria-label="Select crew member"></nav>
 
       <aside id="legend" aria-label="Color legend">
         <div class="scale">
@@ -121,15 +130,6 @@
         </div>
         <span class="legend-item"><span class="swatch no-data"></span> no swab collected</span>
       </aside>
-
-      <section id="drilldown" hidden>
-        <header>
-          <h3 id="drilldown-title">Drill-down</h3>
-          <span class="crew-tag" id="drilldown-tag"></span>
-        </header>
-        <p id="drilldown-summary"></p>
-        <div id="drilldown-content"></div>
-      </section>
     </section>
 
     <section class="panel">
