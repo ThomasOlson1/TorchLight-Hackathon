@@ -51,16 +51,26 @@ function createSpaceman({ hostId, gltf, flip, spinDir }) {
   fill.position.set(-2, 1.5, 2);
   scene.add(fill);
 
-  // Pivot at mid-body height so the upside-down rotation flips around the
-  // visual center rather than around the feet.
+  // The astronaut's local origin is at its FEET (y=0, head ~y=1.8). To
+  // flip around the visual mid-body we use a two-group rig:
+  //
+  //   pivot  (sits at world y=0.95, owns the y-spin)
+  //     └── centerer  (owns the z-flip; its origin = mid-body of the model)
+  //           └── model  (offset y=-0.9 so feet/head straddle the centerer origin)
+  //
+  // Without this rig, model.rotation.z = PI would swing the head down to
+  // y=-1.8 (well below the camera frame) and we'd see only the boots.
   const pivot = new THREE.Group();
   pivot.position.y = 0.95;
   scene.add(pivot);
 
+  const centerer = new THREE.Group();
+  if (flip) centerer.rotation.z = Math.PI;
+  pivot.add(centerer);
+
   const model = gltf.scene.clone(true);
-  model.position.y = -0.95;             // re-center inside the pivot
-  if (flip) model.rotation.z = Math.PI; // upside down
-  pivot.add(model);
+  model.position.y = -0.9;              // mid-body to centerer origin
+  centerer.add(model);
 
   function fitToHost() {
     const w = Math.max(1, host.clientWidth  || 220);
