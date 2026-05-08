@@ -1,32 +1,26 @@
-// Decorative slowly-spinning astronaut in the top-left corner.
-// Pure visual flourish; no interactivity. Bails silently if WebGL or the
-// model fail to load.
+// Two decorative spinning astronauts, positioned at top-left and
+// bottom-right corners with 180-degree rotational symmetry: the second is
+// flipped upside down and spins in the opposite direction.
 
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 
-const HOST_ID    = "corner-spaceman";
-const MODEL_URL  = "./assets/Astronaut.glb";
-const SPIN_RPM   = 6;          // revolutions per minute
+const MODEL_URL = "./assets/Astronaut.glb";
+const SPIN_RPM  = 6;
 const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
 
-(async function init() {
-  const host = document.getElementById(HOST_ID);
-  if (!host) return;
+// Anchor each spaceman to the (variable-height) honesty strip so the
+// top-left one sits flush below the bar regardless of how the bar wraps.
+function strip() { return document.getElementById("honesty-strip"); }
+function applyTopOffset(host) {
+  const s = strip();
+  if (!s) return;
+  host.style.top = (s.offsetHeight + 12) + "px";
+}
 
-  // Anchor the spaceman just below the (variable-height) sticky honesty
-  // strip so it always sits cleanly below the bar even when the bar text
-  // wraps to multiple lines on narrow viewports.
-  function updateTopOffset() {
-    const strip = document.getElementById("honesty-strip");
-    if (!strip) return;
-    const offset = strip.offsetHeight + 12; // 12px breathing room
-    host.style.top = offset + "px";
-  }
-  updateTopOffset();
-  window.addEventListener("resize", updateTopOffset);
-  // Re-measure once layout has fully settled (fonts / late style).
-  requestAnimationFrame(() => requestAnimationFrame(updateTopOffset));
+function createSpaceman({ hostId, gltf, flip, spinDir }) {
+  const host = document.getElementById(hostId);
+  if (!host) return null;
 
   let renderer;
   try {
@@ -35,32 +29,19 @@ const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
       antialias: true,
       failIfMajorPerformanceCaveat: false,
     });
-  } catch (err) {
-    console.warn("Corner spaceman: WebGL unavailable, hiding.");
+  } catch {
     host.style.display = "none";
-    return;
+    return null;
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  // Tighter FOV + larger distance so the model fits head-to-feet with
-  // breathing room. Looking slightly higher than mid-body so the helmet
-  // has room above it.
+  // Tighter FOV + larger distance so the astronaut fits head-to-feet
+  // with breathing room above the helmet and below the boots.
   const camera = new THREE.PerspectiveCamera(26, 1, 0.05, 50);
   camera.position.set(0, 0.95, 4.6);
   camera.lookAt(0, 0.95, 0);
-
-  // Renderer + camera aspect track the host's actual size, not a constant.
-  function fitToHost() {
-    const w = Math.max(1, host.clientWidth  || 200);
-    const h = Math.max(1, host.clientHeight || 240);
-    renderer.setSize(w, h, false);
-    camera.aspect = w / h;
-    camera.updateProjectionMatrix();
-  }
-  fitToHost();
-  window.addEventListener("resize", fitToHost);
 
   scene.add(new THREE.AmbientLight(0xfff5e0, 0.65));
   const key = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -70,30 +51,69 @@ const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
   fill.position.set(-2, 1.5, 2);
   scene.add(fill);
 
-  let model;
+  // Pivot at mid-body height so the upside-down rotation flips around the
+  // visual center rather than around the feet.
+  const pivot = new THREE.Group();
+  pivot.position.y = 0.95;
+  scene.add(pivot);
+
+  const model = gltf.scene.clone(true);
+  model.position.y = -0.95;             // re-center inside the pivot
+  if (flip) model.rotation.z = Math.PI; // upside down
+  pivot.add(model);
+
+  function fitToHost() {
+    const w = Math.max(1, host.clientWidth  || 220);
+    const h = Math.max(1, host.clientHeight || 270);
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  fitToHost();
+  window.addEventListener("resize", fitToHost);
+
+  return {
+    tick(dt) {
+      pivot.rotation.y += spinDir * RADIANS_PER_FRAME * (dt / (1000 / 60));
+      renderer.render(scene, camera);
+    },
+  };
+}
+
+(async function init() {
+  const topLeftHost = document.getElementById("corner-spaceman");
+  const bottomRightHost = document.getElementById("corner-spaceman-2");
+  [topLeftHost, bottomRightHost].forEach(h => h && applyTopOffset(h));
+  // Re-anchor (top-left only; bottom-right uses bottom: in CSS) on resize +
+  // after layout settles for late-loading webfonts.
+  function reanchor() { if (topLeftHost) applyTopOffset(topLeftHost); }
+  window.addEventListener("resize", reanchor);
+  requestAnimationFrame(() => requestAnimationFrame(reanchor));
+
+  let gltf;
   try {
     const loader = new GLTFLoader();
-    const gltf = await new Promise((resolve, reject) =>
+    gltf = await new Promise((resolve, reject) =>
       loader.load(MODEL_URL, resolve, undefined, reject)
     );
-    model = gltf.scene;
-    scene.add(model);
   } catch (err) {
-    console.warn("Corner spaceman: model failed to load, hiding.", err);
-    host.style.display = "none";
+    console.warn("Corner spaceman: model failed to load.", err);
+    if (topLeftHost) topLeftHost.style.display = "none";
+    if (bottomRightHost) bottomRightHost.style.display = "none";
     return;
   }
 
-  // Spin around y axis. rAF loop is cheap because the canvas is tiny (150x150).
-  // Browsers throttle rAF in background tabs automatically, so we don't need
-  // a manual visibility handler.
+  const top    = createSpaceman({ hostId: "corner-spaceman",   gltf, flip: false, spinDir: +1 });
+  const bottom = createSpaceman({ hostId: "corner-spaceman-2", gltf, flip: true,  spinDir: -1 });
+  const all = [top, bottom].filter(Boolean);
+  if (!all.length) return;
+
   let prev = performance.now();
-  function animate(now) {
+  function frame(now) {
     const dt = Math.min(48, now - prev);
     prev = now;
-    if (model) model.rotation.y += RADIANS_PER_FRAME * (dt / (1000 / 60));
-    renderer.render(scene, camera);
-    requestAnimationFrame(animate);
+    for (const s of all) s.tick(dt);
+    requestAnimationFrame(frame);
   }
-  requestAnimationFrame(animate);
+  requestAnimationFrame(frame);
 })();

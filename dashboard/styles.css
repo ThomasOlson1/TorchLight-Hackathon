@@ -116,10 +116,9 @@ main {
   --spaceman-lane: calc(var(--spaceman-w) + var(--spaceman-left) + 14px);
 }
 
-#corner-spaceman {
+#corner-spaceman,
+#corner-spaceman-2 {
   position: fixed !important;
-  top: var(--spaceman-top);
-  left: var(--spaceman-left);
   width: var(--spaceman-w);
   height: var(--spaceman-h);
   z-index: 50;
@@ -132,7 +131,21 @@ main {
   filter: drop-shadow(0 6px 14px rgba(28, 22, 8, 0.16));
 }
 
-#corner-spaceman canvas {
+/* Top-left: JS sets `top` to (honesty-strip height + 12px). */
+#corner-spaceman {
+  top: var(--spaceman-top);
+  left: var(--spaceman-left);
+}
+
+/* Bottom-right: anchored to the viewport bottom and right. The
+   filter+transform on the parent provides the same compositor isolation. */
+#corner-spaceman-2 {
+  bottom: var(--spaceman-left);
+  right:  var(--spaceman-left);
+}
+
+#corner-spaceman canvas,
+#corner-spaceman-2 canvas {
   width: 100% !important;
   height: 100% !important;
   display: block;
@@ -140,21 +153,24 @@ main {
   transform: translateZ(0);
 }
 
-/* On viewports narrower than (max-content-width 1240px + spaceman lane * 2),
-   the spaceman would overlap the centered main column. Push the page content
-   right by exactly one lane so the spaceman lives in the freed-up gutter. */
+/* Below 1540px the natural gutter on either side of the centered 1240px
+   main column isn't wide enough for the spacemen, so header/main/footer
+   gain symmetric left + right padding equal to one spaceman lane. The
+   page content shifts inward and both corners stay clear of text. */
 @media (max-width: 1540px) {
   header.page-header,
   main,
   footer {
-    padding-left: calc(24px + var(--spaceman-lane));
+    padding-left:  calc(24px + var(--spaceman-lane));
+    padding-right: calc(24px + var(--spaceman-lane));
   }
 }
 
 @media (max-width: 720px) {
-  /* On phones the spaceman dominates and there's no gutter to put him in. */
-  #corner-spaceman { display: none; }
-  header.page-header, main, footer { padding-left: 24px; }
+  /* On phones there's no gutter to give the spacemen and they'd cover
+     half the screen. Hide both. */
+  #corner-spaceman, #corner-spaceman-2 { display: none; }
+  header.page-header, main, footer { padding-left: 24px; padding-right: 24px; }
 }
 
 /* ---------- Honesty strip (sticky telemetry banner) ---------- */
