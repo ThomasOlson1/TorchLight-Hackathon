@@ -2820,3 +2820,185 @@ main, header.page-header, footer { max-width: 1680px !important; }
   .hero-main { grid-template-columns: 1fr !important; }
   .hero { padding: 24px 24px !important; }
 }
+
+/* ============================================================
+   HERO V2 — microbiome drilldown panel (dark + larger)
+   ============================================================ */
+
+#drilldown.hero-drilldown {
+  position: absolute !important;
+  top: 100px !important;
+  right: 56px !important;
+  width: min(640px, calc(100% - 112px)) !important;
+  max-height: calc(100% - 160px) !important;
+  overflow: auto !important;
+  background: #0f0a18 !important;
+  color: #f1ead8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  box-shadow:
+    -20px 0 50px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 107, 26, 0.25) !important;
+  padding: 26px 28px !important;
+  font-size: 14px !important;
+}
+
+#drilldown.hero-drilldown header {
+  border-bottom: 2px dashed rgba(255, 255, 255, 0.18) !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 14px !important;
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 14px !important;
+}
+
+#drilldown.hero-drilldown h3 {
+  color: #fff !important;
+  font-family: var(--font-display);
+  font-size: 22px !important;
+  margin: 0 !important;
+}
+
+#drilldown.hero-drilldown .crew-tag {
+  background: rgba(255, 107, 26, 0.18) !important;
+  color: var(--accent) !important;
+  font-family: var(--font-mono);
+  font-size: 13px !important;
+  padding: 3px 12px;
+  letter-spacing: 0.04em;
+}
+
+#drilldown.hero-drilldown .drilldown-close {
+  background: transparent !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  width: 32px; height: 32px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 18px !important;
+  margin-left: auto;
+}
+#drilldown.hero-drilldown .drilldown-close:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+#drilldown.hero-drilldown #drilldown-summary {
+  margin: 4px 0 18px !important;
+  font-size: 14px !important;
+  line-height: 1.55;
+}
+#drilldown.hero-drilldown #drilldown-summary .score {
+  background: var(--accent) !important;
+  color: #0f0a18 !important;
+  padding: 3px 10px !important;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+#drilldown.hero-drilldown #drilldown-summary .ci {
+  font-family: var(--font-mono);
+  color: rgba(241, 234, 216, 0.7) !important;
+}
+
+#drilldown.hero-drilldown #drilldown-tables {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px !important;
+}
+
+#drilldown.hero-drilldown #drilldown-tables h4 {
+  font-family: var(--font-display);
+  font-size: 13px !important;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent) !important;
+  margin: 0 0 10px !important;
+}
+
+#drilldown.hero-drilldown #drilldown-tables ol {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+#drilldown.hero-drilldown #drilldown-tables li {
+  margin: 4px 0;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0;
+  font-size: 14px !important;
+  display: flex !important;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  color: #f1ead8 !important;
+}
+
+#drilldown.hero-drilldown #drilldown-tables li .taxon {
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+#drilldown.hero-drilldown #drilldown-tables li .delta {
+  font-family: var(--font-mono);
+  font-size: 12px !important;
+}
+#drilldown.hero-drilldown #drilldown-tables li .delta.up   { color: #ff8a5a !important; }
+#drilldown.hero-drilldown #drilldown-tables li .delta.down { color: #79b0ff !important; }
+
+#drilldown.hero-drilldown .annot-badge {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid;
+}
+#drilldown.hero-drilldown .annot-badge.caution {
+  color: #ffa380 !important;
+  border-color: var(--bad);
+  background: rgba(200, 32, 29, 0.18);
+}
+#drilldown.hero-drilldown .annot-badge.favorable {
+  color: #7ed8a3 !important;
+  border-color: var(--good);
+  background: rgba(31, 122, 107, 0.20);
+}
+
+#drilldown.hero-drilldown .concern-hint {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px dashed rgba(255, 255, 255, 0.18) !important;
+  color: rgba(241, 234, 216, 0.78) !important;
+  padding: 10px 14px;
+  font-size: 12.5px;
+}
+#drilldown.hero-drilldown .concern-hint strong { color: #fff; }
+
+#drilldown.hero-drilldown .caveat {
+  background: rgba(255, 107, 26, 0.10) !important;
+  color: rgba(255, 215, 180, 0.92) !important;
+  border-left: 3px solid var(--accent) !important;
+  border-radius: 0;
+  padding: 12px 14px !important;
+  font-size: 13px !important;
+}
+
+#drilldown.hero-drilldown .no-swab-msg {
+  background: rgba(255, 255, 255, 0.04) !important;
+  color: rgba(241, 234, 216, 0.7) !important;
+  border-left: 3px solid rgba(255, 255, 255, 0.18) !important;
+  padding: 14px;
+  font-size: 14px;
+}
+
+@media (max-width: 1100px) {
+  #drilldown.hero-drilldown {
+    position: static !important;
+    width: 100% !important;
+    max-height: none !important;
+    margin-top: 18px;
+  }
+  #drilldown.hero-drilldown #drilldown-tables { grid-template-columns: 1fr; }
+}
