@@ -16,7 +16,6 @@ const MICROBIOME_URL = `${DATA_DIR}/microbiome.json`;
 const BLOODWORK_URL = `${DATA_DIR}/bloodwork.json`;
 const OPPORTUNISTS_URL = `${DATA_DIR}/opportunists.json`;
 const BENEFICIALS_URL = `${DATA_DIR}/beneficials.json`;
-const BODY_SVG_URL = "./body.svg";
 
 // Color stops mirror the --score-* CSS custom properties in styles.css.
 const SCORE_STOPS = ["#ececec", "#fde0c5", "#fbb88a", "#f78250", "#d94a1f", "#8c1d10"];
@@ -46,15 +45,13 @@ const state = {
 // =============================================================
 
 async function loadAll() {
-  const [microbiome, bloodwork, opportunists, beneficials, bodyText] = await Promise.all([
+  const [microbiome, bloodwork, opportunists, beneficials] = await Promise.all([
     fetch(MICROBIOME_URL).then(r => r.json()),
     fetch(BLOODWORK_URL).then(r => r.json()),
     fetch(OPPORTUNISTS_URL).then(r => r.json()).catch(() => ({})),
     fetch(BENEFICIALS_URL).then(r => r.json()).catch(() => ({})),
-    fetch(BODY_SVG_URL).then(r => r.text()),
   ]);
-  const bodyDoc = new DOMParser().parseFromString(bodyText, "image/svg+xml").documentElement;
-  return { microbiome, bloodwork, opportunists, beneficials, bodyDoc };
+  return { microbiome, bloodwork, opportunists, beneficials };
 }
 
 // Returns { note, ref } if the species is on the curated opportunist list, else null.
@@ -99,53 +96,319 @@ function colorForScore(d, withinBaselineNoise) {
 }
 
 // =============================================================
-// SVG mounting + painting
+// 3D avatars (Three.js, procedural T-pose body, render-on-demand)
 // =============================================================
 
-function mountAvatars(bodyDoc) {
-  document.querySelectorAll("figure[data-crew] .avatar").forEach(host => {
-    host.appendChild(bodyDoc.cloneNode(true));
-  });
-}
+import * as THREE from "three";
 
-function paintAvatar(crew, timepoint) {
-  const fig = document.querySelector(`figure[data-crew="${crew}"]`);
-  if (!fig) return;
-  const crewScores = state.microbiome.scores[crew] || {};
+// Anatomical hotspot positions in body-local coordinates.
+// The body is built standing on the y=0 plane, head up the +y axis,
+// facing +z. Units are arbitrary; the camera frames everything.
+const HOTSPOT_POSITIONS = {
+  // Front of head and face
+  glabella:       new THREE.Vector3( 0.00, 1.78,  0.18),
+  nasal:          new THREE.Vector3( 0.00, 1.72,  0.18),
+  oral:           new THREE.Vector3( 0.00, 1.66,  0.18),
+  // Sides
+  post_auricular: new THREE.Vector3(-0.16, 1.74, -0.05),
+  axillary:       new THREE.Vector3(-0.32, 1.34,  0.00),
+  forearm:        new THREE.Vector3(-0.78, 1.40,  0.00),
+  // Front torso
+  umbilicus:      new THREE.Vector3( 0.00, 1.05,  0.20),
+  // Back
+  occiput:        new THREE.Vector3( 0.00, 1.78, -0.18),
+  gluteal:        new THREE.Vector3( 0.00, 0.78, -0.20),
+  // Lower
+  toe_web:        new THREE.Vector3(-0.10, 0.04,  0.10),
+};
 
-  fig.querySelectorAll(".region").forEach(node => {
-    const site = node.dataset.region;
-    const cell = (crewScores[site] || {})[timepoint];
-    if (!cell) {
-      node.setAttribute("data-no-data", "true");
-      node.style.fill = "";
-      node.dataset.score = "";
-      // Tooltip
-      ensureTitle(node, `${labelForSite(site)} · ${timepoint}: no swab collected`);
-    } else {
-      node.removeAttribute("data-no-data");
-      node.style.fill = colorForScore(cell.d, cell.within_baseline_noise);
-      node.dataset.score = String(cell.d);
-      const noiseTag = cell.within_baseline_noise ? " (within baseline noise)" : "";
-      ensureTitle(node, `${labelForSite(site)} · ${timepoint}\nd = ${cell.d.toFixed(2)} [95% CI ${cell.ci_lo.toFixed(2)}–${cell.ci_hi.toFixed(2)}], n_baseline = ${cell.n_baseline}${noiseTag}`);
+const BODY_COLOR    = 0xd4c8a8;  // matches CSS body fill
+const BODY_OUTLINE  = 0x6e6856;  // matches CSS body stroke
+const HOTSPOT_RADIUS = 0.06;
+
+const avatars = new Map();  // crew_id -> Avatar3D instance
+
+class Avatar3D {
+  constructor(canvas, crewId) {
+    this.canvas = canvas;
+    this.crewId = crewId;
+    this.dirty = true;
+
+    const w = canvas.clientWidth || 280;
+    const h = canvas.clientHeight || 320;
+
+    this.scene = new THREE.Scene();
+    this.scene.background = null;
+
+    this.camera = new THREE.PerspectiveCamera(28, w / h, 0.1, 50);
+    this.camera.position.set(0, 1.0, 4.6);
+    this.camera.lookAt(0, 1.0, 0);
+
+    this.renderer = new THREE.WebGLRenderer({
+      canvas, alpha: true, antialias: true, powerPreference: "low-power",
+    });
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    this.renderer.setSize(w, h, false);
+
+    // Lighting: soft ambient + a key + a fill so the T-pose reads cleanly.
+    this.scene.add(new THREE.AmbientLight(0xfff5e0, 0.55));
+    const key = new THREE.DirectionalLight(0xffffff, 0.85);
+    key.position.set(2.5, 4, 3);
+    this.scene.add(key);
+    const fill = new THREE.DirectionalLight(0xc7d8ff, 0.35);
+    fill.position.set(-2, 1.5, 2);
+    this.scene.add(fill);
+    const back = new THREE.DirectionalLight(0xffe4c2, 0.22);
+    back.position.set(0, 2, -3);
+    this.scene.add(back);
+
+    // Root group so we can rotate the whole body.
+    this.root = new THREE.Group();
+    this.scene.add(this.root);
+
+    this.body = this.buildTPoseBody();
+    this.root.add(this.body);
+
+    // Hotspot meshes, one per anatomical site.
+    this.hotspots = new Map();
+    const hotspotGeom = new THREE.SphereGeometry(HOTSPOT_RADIUS, 18, 14);
+    for (const [site, pos] of Object.entries(HOTSPOT_POSITIONS)) {
+      const mat = new THREE.MeshStandardMaterial({
+        color: 0xececec, roughness: 0.35, metalness: 0.0,
+        emissive: 0x000000,
+      });
+      const mesh = new THREE.Mesh(hotspotGeom, mat);
+      mesh.position.copy(pos);
+      mesh.userData.site = site;
+      this.root.add(mesh);
+      this.hotspots.set(site, mesh);
     }
-  });
+
+    // Drag-to-rotate (mouse + touch). Render-on-demand triggered by drag.
+    this.attachControls();
+
+    // Raycaster for hover/click on hotspots.
+    this.raycaster = new THREE.Raycaster();
+    this.pointer = new THREE.Vector2();
+    canvas.addEventListener("mousemove", (e) => this.onPointerMove(e));
+    canvas.addEventListener("mouseleave", () => { canvas.style.cursor = ""; });
+    canvas.addEventListener("click", (e) => this.onClick(e));
+
+    // Resize observer to keep the canvas crisp on layout changes.
+    const ro = new ResizeObserver(() => this.handleResize());
+    ro.observe(canvas);
+
+    this.requestRender();
+  }
+
+  buildTPoseBody() {
+    const g = new THREE.Group();
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: BODY_COLOR, roughness: 0.85, metalness: 0.0,
+    });
+
+    // Head (sphere)
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.16, 28, 22), bodyMat);
+    head.position.set(0, 1.74, 0);
+    g.add(head);
+
+    // Neck (cylinder)
+    const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.06, 0.10, 16), bodyMat);
+    neck.position.set(0, 1.55, 0);
+    g.add(neck);
+
+    // Torso (capsule-ish: cylinder with sphere caps)
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.20, 0.18, 0.65, 24), bodyMat);
+    torso.position.set(0, 1.18, 0);
+    g.add(torso);
+    const shoulders = new THREE.Mesh(new THREE.SphereGeometry(0.20, 24, 18), bodyMat);
+    shoulders.position.set(0, 1.50, 0);
+    g.add(shoulders);
+    const hips = new THREE.Mesh(new THREE.SphereGeometry(0.18, 24, 18), bodyMat);
+    hips.position.set(0, 0.85, 0);
+    g.add(hips);
+
+    // Arms (T-pose: extended horizontally along -x and +x)
+    const armLen = 0.70;
+    const armGeom = new THREE.CylinderGeometry(0.058, 0.05, armLen, 16);
+
+    const leftArm = new THREE.Mesh(armGeom, bodyMat);
+    leftArm.rotation.z = Math.PI / 2;     // lay along x
+    leftArm.position.set(-0.20 - armLen / 2, 1.43, 0);
+    g.add(leftArm);
+    // Hands (small spheres at the wrists)
+    const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 18, 14), bodyMat);
+    leftHand.position.set(-0.20 - armLen, 1.43, 0);
+    g.add(leftHand);
+
+    const rightArm = new THREE.Mesh(armGeom, bodyMat);
+    rightArm.rotation.z = Math.PI / 2;
+    rightArm.position.set( 0.20 + armLen / 2, 1.43, 0);
+    g.add(rightArm);
+    const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 18, 14), bodyMat);
+    rightHand.position.set(0.20 + armLen, 1.43, 0);
+    g.add(rightHand);
+
+    // Legs
+    const legLen = 0.78;
+    const legGeom = new THREE.CylinderGeometry(0.075, 0.06, legLen, 18);
+    const leftLeg = new THREE.Mesh(legGeom, bodyMat);
+    leftLeg.position.set(-0.10, 0.85 - legLen / 2 - 0.05, 0);
+    g.add(leftLeg);
+    const rightLeg = new THREE.Mesh(legGeom, bodyMat);
+    rightLeg.position.set( 0.10, 0.85 - legLen / 2 - 0.05, 0);
+    g.add(rightLeg);
+
+    // Feet (flattened spheres at floor level)
+    const footGeom = new THREE.SphereGeometry(0.08, 16, 12);
+    const leftFoot = new THREE.Mesh(footGeom, bodyMat);
+    leftFoot.position.set(-0.10, 0.04, 0.05);
+    leftFoot.scale.set(1.0, 0.45, 1.5);
+    g.add(leftFoot);
+    const rightFoot = new THREE.Mesh(footGeom, bodyMat);
+    rightFoot.position.set( 0.10, 0.04, 0.05);
+    rightFoot.scale.set(1.0, 0.45, 1.5);
+    g.add(rightFoot);
+
+    return g;
+  }
+
+  attachControls() {
+    let dragging = false;
+    let lastX = 0, lastY = 0;
+    const targetRot = { x: 0, y: 0 };
+
+    const onDown = (e) => {
+      dragging = true;
+      const p = e.touches ? e.touches[0] : e;
+      lastX = p.clientX; lastY = p.clientY;
+      this.canvas.style.cursor = "grabbing";
+    };
+    const onMove = (e) => {
+      if (!dragging) return;
+      const p = e.touches ? e.touches[0] : e;
+      const dx = p.clientX - lastX;
+      const dy = p.clientY - lastY;
+      lastX = p.clientX; lastY = p.clientY;
+      targetRot.y += dx * 0.01;
+      targetRot.x = Math.max(-0.6, Math.min(0.6, targetRot.x + dy * 0.005));
+      this.root.rotation.x = targetRot.x;
+      this.root.rotation.y = targetRot.y;
+      this.requestRender();
+    };
+    const onUp = () => {
+      dragging = false;
+      this.canvas.style.cursor = "grab";
+    };
+
+    this.canvas.addEventListener("mousedown",  onDown);
+    window.addEventListener("mousemove",       onMove);
+    window.addEventListener("mouseup",         onUp);
+    this.canvas.addEventListener("touchstart", onDown, { passive: true });
+    window.addEventListener("touchmove",       onMove, { passive: true });
+    window.addEventListener("touchend",        onUp);
+
+    this.canvas.style.cursor = "grab";
+  }
+
+  setPointerFromEvent(e) {
+    const r = this.canvas.getBoundingClientRect();
+    this.pointer.x = ((e.clientX - r.left) / r.width)  *  2 - 1;
+    this.pointer.y = ((e.clientY - r.top)  / r.height) * -2 + 1;
+  }
+
+  pickHotspot(e) {
+    this.setPointerFromEvent(e);
+    this.raycaster.setFromCamera(this.pointer, this.camera);
+    const meshes = [...this.hotspots.values()];
+    const hits = this.raycaster.intersectObjects(meshes, false);
+    return hits.length ? hits[0].object : null;
+  }
+
+  onPointerMove(e) {
+    const hit = this.pickHotspot(e);
+    if (hit) {
+      this.canvas.style.cursor = "pointer";
+      this.canvas.title = hit.userData.tooltip || labelForSite(hit.userData.site);
+    } else {
+      this.canvas.style.cursor = "grab";
+      this.canvas.title = "";
+    }
+  }
+
+  onClick(e) {
+    const hit = this.pickHotspot(e);
+    if (hit) {
+      openDrilldown(this.crewId, hit.userData.site);
+      // Mark this crew as selected so cross-crew dimming kicks in.
+      selectCrew(this.crewId);
+    }
+  }
+
+  setScores(scoresForCrew, timepoint) {
+    for (const [site, mesh] of this.hotspots) {
+      const cell = (scoresForCrew[site] || {})[timepoint];
+      if (!cell) {
+        mesh.material.color.set(0xeeeae0);
+        mesh.material.emissive.set(0x000000);
+        mesh.scale.setScalar(0.65);
+        mesh.userData.tooltip = `${labelForSite(site)} · ${timepoint}: no swab collected`;
+      } else {
+        const css = colorForScore(cell.d, cell.within_baseline_noise);
+        // Convert CSS rgb(...) string to a hex/Color
+        mesh.material.color.set(this.cssToColor(css));
+        // Subtle emissive pop for high scores so they're easier to spot at small sizes.
+        const intensity = Math.max(0, Math.min(1, cell.d - 0.4));
+        mesh.material.emissive.setRGB(intensity * 0.6, intensity * 0.18, 0.0);
+        mesh.scale.setScalar(0.85 + Math.min(1, cell.d) * 0.6);
+        const noiseTag = cell.within_baseline_noise ? " (within baseline noise)" : "";
+        mesh.userData.tooltip =
+          `${labelForSite(site)} · ${timepoint}\nd = ${cell.d.toFixed(2)} [95% CI ${cell.ci_lo.toFixed(2)}–${cell.ci_hi.toFixed(2)}], n=${cell.n_baseline}${noiseTag}`;
+      }
+    }
+    this.requestRender();
+  }
+
+  cssToColor(css) {
+    const m = css.match(/rgb\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)/);
+    if (!m) return new THREE.Color(0xeeeae0);
+    return new THREE.Color(parseInt(m[1]) / 255, parseInt(m[2]) / 255, parseInt(m[3]) / 255);
+  }
+
+  handleResize() {
+    const w = this.canvas.clientWidth || 280;
+    const h = this.canvas.clientHeight || 320;
+    this.renderer.setSize(w, h, false);
+    this.camera.aspect = w / h;
+    this.camera.updateProjectionMatrix();
+    this.requestRender();
+  }
+
+  requestRender() {
+    if (this._raf) return;
+    this._raf = requestAnimationFrame(() => {
+      this._raf = null;
+      this.renderer.render(this.scene, this.camera);
+    });
+  }
 }
 
-function ensureTitle(node, text) {
-  let title = node.querySelector("title");
-  if (!title) {
-    title = document.createElementNS("http://www.w3.org/2000/svg", "title");
-    node.appendChild(title);
-  }
-  title.textContent = text;
+function mountAvatars() {
+  document.querySelectorAll("figure[data-crew] .avatar-canvas").forEach(canvas => {
+    const fig = canvas.closest("figure[data-crew]");
+    const crew = fig.dataset.crew;
+    const av = new Avatar3D(canvas, crew);
+    avatars.set(crew, av);
+  });
 }
 
 function repaintAll() {
   const tp = state.microbiome.timepoints[state.timepointIdx];
   document.getElementById("timepoint-label").textContent = tp;
-  state.microbiome.crew.forEach(crew => paintAvatar(crew, tp));
-  // Refresh drilldown if it's open against the new timepoint
+  for (const [crew, av] of avatars) {
+    const crewScores = state.microbiome.scores[crew] || {};
+    av.setScores(crewScores, tp);
+  }
   refreshDrilldown();
 }
 
@@ -565,19 +828,16 @@ function wireEvents() {
     repaintAll();
   });
 
-  // Avatar grid: click figure -> select crew, click region -> drilldown
+  // Avatar grid: clicking the figcaption / canvas chrome (not a hotspot) selects
+  // the crew. Hotspot clicks are handled inside Avatar3D and call selectCrew()
+  // themselves, so we only need a fallback here.
   const grid = document.getElementById("avatar-grid");
   grid.addEventListener("click", (e) => {
-    const region = e.target.closest("[data-region]");
     const figure = e.target.closest("figure[data-crew]");
     if (!figure) return;
-
-    if (region) {
-      e.stopPropagation();
-      openDrilldown(figure.dataset.crew, region.dataset.region);
-    } else {
-      selectCrew(figure.dataset.crew);
-    }
+    // Don't double-fire if the 3D layer already handled it.
+    if (e.target.classList && e.target.classList.contains("avatar-canvas")) return;
+    selectCrew(figure.dataset.crew);
   });
   grid.addEventListener("keydown", (e) => {
     if (e.key !== "Enter" && e.key !== " ") return;
@@ -593,12 +853,12 @@ function wireEvents() {
 document.addEventListener("DOMContentLoaded", async () => {
   // Each step is isolated: one failing render shouldn't black out the whole page.
   try {
-    const { microbiome, bloodwork, opportunists, beneficials, bodyDoc } = await loadAll();
+    const { microbiome, bloodwork, opportunists, beneficials } = await loadAll();
     state.microbiome = microbiome;
     state.bloodwork = bloodwork;
     state.opportunists = opportunists;
     state.beneficials = beneficials;
-    safe("mountAvatars",        () => mountAvatars(bodyDoc));
+    safe("mountAvatars",        () => mountAvatars());
     safe("wireEvents",          () => wireEvents());
     safe("repaintAll",          () => repaintAll());
     safe("renderCrewSummaries",   () => renderCrewSummaries());

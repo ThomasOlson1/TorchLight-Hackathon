@@ -79,21 +79,22 @@
       <div id="avatar-grid" role="group" aria-label="Crew member microbiome avatars">
         <figure data-crew="C001" tabindex="0">
           <figcaption>C001</figcaption>
-          <div class="avatar"></div>
+          <div class="avatar"><canvas class="avatar-canvas"></canvas></div>
         </figure>
         <figure data-crew="C002" tabindex="0">
           <figcaption>C002</figcaption>
-          <div class="avatar"></div>
+          <div class="avatar"><canvas class="avatar-canvas"></canvas></div>
         </figure>
         <figure data-crew="C003" tabindex="0">
           <figcaption>C003</figcaption>
-          <div class="avatar"></div>
+          <div class="avatar"><canvas class="avatar-canvas"></canvas></div>
         </figure>
         <figure data-crew="C004" tabindex="0">
           <figcaption>C004</figcaption>
-          <div class="avatar"></div>
+          <div class="avatar"><canvas class="avatar-canvas"></canvas></div>
         </figure>
       </div>
+      <p class="avatar-hint">Drag a body to rotate · click any colored sphere for taxa drilldown</p>
 
       <aside id="legend" aria-label="Color legend">
         <div class="scale">
@@ -147,6 +148,14 @@
     </p>
   </footer>
 
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
   <script src="app.js" type="module"></script>
 
 </body>
