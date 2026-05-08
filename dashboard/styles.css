@@ -111,19 +111,24 @@ main {
 :root {
   --spaceman-w: 140px;
   --spaceman-h: 170px;
-  --spaceman-top: 64px;   /* sits below the ~44px honesty strip */
+  --spaceman-top: 90px;   /* well clear of the sticky honesty strip */
   --spaceman-left: 14px;
   --spaceman-lane: calc(var(--spaceman-w) + var(--spaceman-left) + 12px);
 }
 
 #corner-spaceman {
-  position: fixed;
+  position: fixed !important;
   top: var(--spaceman-top);
   left: var(--spaceman-left);
   width: var(--spaceman-w);
   height: var(--spaceman-h);
   z-index: 50;
   pointer-events: none;
+  /* Force a dedicated GPU compositor layer. Without this, WebKit can
+     decouple the inner <canvas> from the fixed parent and the spaceman
+     appears to scroll with page content. */
+  transform: translateZ(0);
+  will-change: transform;
   filter: drop-shadow(0 6px 14px rgba(28, 22, 8, 0.16));
 }
 
@@ -131,6 +136,8 @@ main {
   width: 100% !important;
   height: 100% !important;
   display: block;
+  /* Same trick on the canvas itself, belt-and-suspenders. */
+  transform: translateZ(0);
 }
 
 /* On viewports narrower than (max-content-width 1240px + spaceman lane * 2),
