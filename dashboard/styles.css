@@ -101,6 +101,29 @@ main {
 
 ::selection { background: var(--accent-soft); color: var(--ink); }
 
+/* ---------- Decorative corner spaceman ---------- */
+
+#corner-spaceman {
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  width: 150px;
+  height: 150px;
+  z-index: 200;
+  pointer-events: none;
+  filter: drop-shadow(0 4px 10px rgba(28, 22, 8, 0.18));
+}
+
+#corner-spaceman canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+@media (max-width: 720px) {
+  #corner-spaceman { width: 96px; height: 96px; top: 8px; left: 8px; }
+}
+
 /* ---------- Honesty strip (sticky telemetry banner) ---------- */
 
 #honesty-strip {

@@ -229,7 +229,7 @@ function labelForSite(site) {
 
 function plainLanguageScore(d, withinBaselineNoise) {
   if (withinBaselineNoise) {
-    return "Within your pre-flight noise — we can't distinguish this from your normal variation.";
+    return "Within your pre-flight noise. We can't distinguish this from your normal variation.";
   }
   if (d < 0.2) return "Near your pre-flight baseline.";
   if (d < 0.5) return "Moderately shifted from your pre-flight microbiome.";
@@ -307,7 +307,7 @@ function refreshDrilldown() {
     return items.map(t => {
       const annot = annotationFor(t.name, klass);
       const badge = annot
-        ? ` <span class="annot-badge ${annot.kind}" title="${escapeHtml(annot.note)} — ${escapeHtml(annot.ref)}">${annot.icon} ${escapeHtml(annot.label)}</span>`
+        ? ` <span class="annot-badge ${annot.kind}" title="${escapeHtml(annot.note)} (${escapeHtml(annot.ref)})">${annot.icon} ${escapeHtml(annot.label)}</span>`
         : "";
       return `<li><span class="taxon">${escapeHtml(t.name)}${badge}</span><span class="delta ${klass}">${t.delta >= 0 ? "+" : ""}${t.delta.toFixed(2)}</span></li>`;
     }).join("");

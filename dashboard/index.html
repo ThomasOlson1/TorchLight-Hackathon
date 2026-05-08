@@ -9,8 +9,17 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap">
   <link rel="stylesheet" href="styles.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
 </head>
 <body>
+  <div id="corner-spaceman" aria-hidden="true"></div>
 
   <aside id="honesty-strip" role="note" aria-label="Data limitations">
     <strong>4 crew members. 3 pre-flight baseline swabs per body site. No in-flight CBC.</strong>
@@ -19,7 +28,7 @@
 
   <header class="page-header">
     <h1>Recovery, Honestly</h1>
-    <p class="subtitle">Am I back to baseline — and where on me did things shift?</p>
+    <p class="subtitle">Am I back to baseline, and where on me did things shift?</p>
     <span class="mission-tag">SpaceX Inspiration 4 · Sep 2021</span>
   </header>
 
@@ -29,7 +38,7 @@
       <h2>Personal recovery report</h2>
       <p class="panel-subtitle">
         One card per crew member. Each shows where that astronaut is now compared to their own pre-flight baseline
-        (mean of L-92, L-44, L-3 — never a population norm) across four bloodwork panels: CBC, CMP, immune
+        (mean of L-92, L-44, L-3, never a population norm) across four bloodwork panels: CBC, CMP, immune
         cytokines, and cardiovascular markers (OSD-569 + OSD-575).
       </p>
       <aside class="summary-legend" aria-label="Legend">
@@ -52,7 +61,7 @@
       <details>
         <summary>
           <h2 style="display:inline">Per-system auto-generated findings</h2>
-          <span class="muted" style="margin-left:8px">— more granular detail</span>
+          <span class="muted" style="margin-left:8px">(more granular detail)</span>
         </summary>
         <div id="findings-list"></div>
       </details>
@@ -60,7 +69,7 @@
 
 
     <section class="panel" id="avatar-section">
-      <h2>Microbiome — where on the body did things shift?</h2>
+      <h2>Microbiome: where on the body did things shift?</h2>
       <p class="panel-subtitle">
         For each crew member, color shows how far that body site's microbial community has drifted from
         their <em>own</em> pre-flight baseline (Bray–Curtis distance). Click a region to see which organisms
@@ -125,11 +134,11 @@
     <section class="panel">
       <h2>What you should and shouldn't take from this</h2>
       <ul>
-        <li><strong>Personal, not population.</strong> Every score compares you to <em>your own</em> pre-flight baseline. We deliberately avoid implying a population "normal" — n=4 is too small to define one.</li>
-        <li><strong>"Within baseline noise" means we can't tell.</strong> If a post-flight value sits inside the spread of your three pre-flight swabs, we say so explicitly. That's not "you recovered" — it's "we can't distinguish from your normal variation."</li>
-        <li><strong>Color = "shifted," not "dangerous."</strong> The avatar's red regions show how far a body site's microbial community has moved from your own pre-flight baseline — it doesn't distinguish a beneficial shift from a harmful one. To get direction, open the drilldown: ⚠ marks taxa whose shift may matter (a literature-flagged opportunist rising, or a beneficial commensal falling); ✓ marks shifts that may be favorable (a beneficial commensal rising, or an opportunist falling). Curated lists with citations on hover.</li>
+        <li><strong>Personal, not population.</strong> Every score compares you to <em>your own</em> pre-flight baseline. We deliberately avoid implying a population "normal." n=4 is too small to define one.</li>
+        <li><strong>"Within baseline noise" means we can't tell.</strong> If a post-flight value sits inside the spread of your three pre-flight swabs, we say so explicitly. That's not "you recovered." It's "we can't distinguish from your normal variation."</li>
+        <li><strong>Color = "shifted," not "dangerous."</strong> The avatar's red regions show how far a body site's microbial community has moved from your own pre-flight baseline. It doesn't distinguish a beneficial shift from a harmful one. To get direction, open the drilldown: ⚠ marks taxa whose shift may matter (a literature-flagged opportunist rising, or a beneficial commensal falling); ✓ marks shifts that may be favorable (a beneficial commensal rising, or an opportunist falling). Curated lists with citations on hover.</li>
         <li><strong>No clinical recommendations.</strong> This is a research-data viewer, not a medical tool. Anything actionable should go through your flight surgeon.</li>
-        <li><strong>No in-flight CBC.</strong> Blood draws happened before and after the mission, not during. The CBC plots intentionally have a gap between L-3 and R+1 — we don't interpolate across it.</li>
+        <li><strong>No in-flight CBC.</strong> Blood draws happened before and after the mission, not during. The CBC plots intentionally have a gap between L-3 and R+1, and we don't interpolate across it.</li>
       </ul>
     </section>
 
@@ -143,12 +152,13 @@
       NASA's Open Science Data Repository.
     </p>
     <p>
-      Built for the 2026 Torchlight Sovereignty Hackathon, Track 3 — Communication &amp; Visualization.
+      Built for the 2026 Torchlight Sovereignty Hackathon, Track 3: Communication &amp; Visualization.
       Crew identifiers (C001–C004) are anonymized and do not correspond to mission roster order.
     </p>
   </footer>
 
   <script src="app.js" type="module"></script>
+  <script src="corner-spaceman.js" type="module"></script>
 
 </body>
 </html>
