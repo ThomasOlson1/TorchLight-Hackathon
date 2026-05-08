@@ -2690,3 +2690,94 @@ footer {
   font-size: 10px;
   color: rgba(241, 234, 216, 0.55);
 }
+
+/* ============================================================
+   HERO V2 — body window enlargement + blood-data legend
+   ============================================================ */
+
+/* Give the body more horizontal real estate. */
+.hero-main {
+  grid-template-columns: minmax(0, 1.4fr) minmax(360px, 1fr) !important;
+  gap: 28px !important;
+}
+
+/* Body host grows; the canvas auto-fits to whatever size we give it. */
+.hero-body-host {
+  min-height: 78vh !important;
+  margin-top: 40px !important;
+  width: 100%;
+  height: 78vh;
+  display: block;
+  position: relative;
+}
+
+.hero-body-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Slightly smaller crew-id overlay so it doesn't dominate the bigger body */
+.hero-crew-id { font-size: 96px !important; }
+
+/* Stats column max-height gets bumped to match the bigger body */
+.hero-stats-col {
+  max-height: 84vh !important;
+}
+
+/* Blood-data legend (top of stats column) */
+.blood-legend {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.10);
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.blood-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+.blood-legend .legend-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(241, 234, 216, 0.5);
+  min-width: 56px;
+}
+.blood-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(241, 234, 216, 0.78);
+  white-space: nowrap;
+}
+.blood-legend .status-dot {
+  display: inline-block;
+  width: 10px; height: 10px;
+  border-radius: 50%;
+}
+.blood-legend .status-dot.back_to_baseline { background: var(--good); }
+.blood-legend .status-dot.mixed             { background: var(--amber); }
+.blood-legend .status-dot.still_elevated    { background: var(--bad); }
+.blood-legend .status-dot.still_decreased   { background: var(--azure); }
+.blood-legend .concern-dot {
+  display: inline-block;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid;
+}
+.blood-legend .concern-dot.expected   { background: var(--good-soft);  border-color: var(--good); }
+.blood-legend .concern-dot.watch      { background: var(--warn-soft);  border-color: var(--amber); }
+.blood-legend .concern-dot.follow_up  { background: var(--bad-soft);   border-color: var(--bad); }
+
+@media (max-width: 1100px) {
+  .hero-main { grid-template-columns: 1fr !important; }
+  .hero-body-host { height: 60vh; min-height: 60vh !important; }
+}

@@ -850,18 +850,23 @@ const ASTRONAUT_URL = "./assets/Astronaut.glb";
 const HERO_SPIN_RPM = 4;
 const HERO_RADIANS_PER_FRAME = (HERO_SPIN_RPM * 2 * Math.PI) / 60 / 60;
 
-// Anatomical hotspot positions tuned to the Astronaut.glb model.
-const HERO_HOTSPOT_POSITIONS = {
-  glabella:       [ 0.00, 1.42,  0.20],
-  nasal:          [ 0.00, 1.36,  0.22],
-  oral:           [ 0.00, 1.30,  0.22],
-  post_auricular: [-0.18, 1.36, -0.02],
-  occiput:        [ 0.00, 1.40, -0.20],
-  axillary:       [-0.22, 1.05,  0.00],
-  forearm:        [-0.42, 0.78,  0.05],
-  umbilicus:      [ 0.00, 0.85,  0.22],
-  gluteal:        [ 0.00, 0.55, -0.22],
-  toe_web:        [-0.10, 0.10,  0.18],
+// Hotspot positions as FRACTIONS of the model's actual bounding box.
+// y: -1 is feet, +1 is top of head; 0 is vertical center.
+// x: -1 is left side, +1 is right side; 0 is centerline.
+// z: -1 is back, +1 is front (model assumed to face +z).
+// We resolve these to world coords after loading the model so hotspots
+// land on real anatomy regardless of the model's actual scale.
+const HERO_HOTSPOT_FRACTIONS = {
+  glabella:       { x:  0.00, y:  0.92, z:  0.55 },
+  nasal:          { x:  0.00, y:  0.85, z:  0.65 },
+  oral:           { x:  0.00, y:  0.78, z:  0.65 },
+  post_auricular: { x: -0.55, y:  0.88, z:  0.05 },
+  occiput:        { x:  0.00, y:  0.92, z: -0.55 },
+  axillary:       { x: -0.55, y:  0.30, z:  0.05 },
+  forearm:        { x: -1.05, y: -0.05, z:  0.05 },
+  umbilicus:      { x:  0.00, y:  0.05, z:  0.55 },
+  gluteal:        { x:  0.00, y: -0.20, z: -0.55 },
+  toe_web:        { x: -0.20, y: -0.95, z:  0.50 },
 };
 
 // Shared loader (cached so the model only fetches once).
@@ -895,8 +900,6 @@ async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSi
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(28, 1, 0.05, 50);
-  camera.position.set(0, 0.95, 5.0);
-  camera.lookAt(0, 0.95, 0);
 
   scene.add(new THREE.AmbientLight(0xfff5e0, 0.55));
   const key = new THREE.DirectionalLight(0xffffff, 1.1);
@@ -906,8 +909,8 @@ async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSi
   const rim = new THREE.DirectionalLight(0xffaa55, 0.35);
   rim.position.set(0, 1, -3); scene.add(rim);
 
+  // Pivot at world origin; model + hotspots are children. Pivot owns the spin.
   const pivot = new THREE.Group();
-  pivot.position.y = 0.95;
   scene.add(pivot);
 
   let gltf;
@@ -919,21 +922,39 @@ async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSi
     return null;
   }
   const model = gltf.scene.clone(true);
-  model.position.y = -0.95; // recenter inside pivot
   pivot.add(model);
 
-  // Hotspot meshes for the 10 anatomical sites.
+  // Compute the model's actual bounding box and re-center it so its visual
+  // mid-body sits at the pivot's origin. Then position hotspots as fractions
+  // of the actual bbox so they land on real anatomy regardless of how the
+  // glTF was authored / scaled.
+  const initialBox = new THREE.Box3().setFromObject(model);
+  const initialCenter = initialBox.getCenter(new THREE.Vector3());
+  model.position.sub(initialCenter);
+
+  const finalBox = new THREE.Box3().setFromObject(model);
+  const size = finalBox.getSize(new THREE.Vector3());
+  const halfW = size.x / 2;
+  const halfH = size.y / 2;
+  const halfD = size.z / 2;
+  console.log("[hero body] model bbox size:", size, "center:", finalBox.getCenter(new THREE.Vector3()));
+
+  // Frame the camera to fit the model with a comfortable margin.
+  const camDistance = Math.max(size.y, size.x) * 1.65;
+  camera.position.set(0, 0, camDistance);
+  camera.lookAt(0, 0, 0);
+
+  // Hotspot radius scales with model height so it reads proportionally.
+  const hotspotRadius = size.y * 0.025;
+
   const hotspots = new Map();
-  const hotspotGeom = new THREE.SphereGeometry(0.06, 22, 16);
-  for (const [site, pos] of Object.entries(HERO_HOTSPOT_POSITIONS)) {
+  const hotspotGeom = new THREE.SphereGeometry(hotspotRadius, 22, 16);
+  for (const [site, frac] of Object.entries(HERO_HOTSPOT_FRACTIONS)) {
     const mat = new THREE.MeshStandardMaterial({
       color: 0xececec, roughness: 0.35, metalness: 0.0, emissive: 0x000000,
     });
     const mesh = new THREE.Mesh(hotspotGeom, mat);
-    // Pivot is at world y=0.95; model is at -0.95 inside it. Hotspots are
-    // also children of the pivot, so subtract the same offset to live in
-    // the model's anatomical frame.
-    mesh.position.set(pos[0], pos[1] - 0.95, pos[2]);
+    mesh.position.set(frac.x * halfW, frac.y * halfH, frac.z * halfD);
     mesh.userData.site = site;
     pivot.add(mesh);
     hotspots.set(site, mesh);
@@ -1237,6 +1258,22 @@ function renderHeroStats() {
         <p class="hero-stats-overview">${escapeHtml(c.overall_text)}</p>
       </div>
     </header>
+
+    <div class="blood-legend" aria-label="Bloodwork legend">
+      <div class="blood-legend-row">
+        <span class="legend-title">Status</span>
+        <span class="blood-legend-item"><span class="status-dot back_to_baseline"></span>back to baseline</span>
+        <span class="blood-legend-item"><span class="status-dot mixed"></span>mixed</span>
+        <span class="blood-legend-item"><span class="status-dot still_elevated"></span>elevated</span>
+        <span class="blood-legend-item"><span class="status-dot still_decreased"></span>below baseline</span>
+      </div>
+      <div class="blood-legend-row">
+        <span class="legend-title">Concern</span>
+        <span class="blood-legend-item"><span class="concern-dot expected"></span>expected</span>
+        <span class="blood-legend-item"><span class="concern-dot watch"></span>worth watching</span>
+        <span class="blood-legend-item"><span class="concern-dot follow_up"></span>follow-up</span>
+      </div>
+    </div>
 
     <h3 class="hero-stats-h3">Bloodwork systems <span class="muted">(click to expand)</span></h3>
     <div class="hero-systems">${systemTiles}</div>
