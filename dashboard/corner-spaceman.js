@@ -15,6 +15,20 @@ const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
   const host = document.getElementById(HOST_ID);
   if (!host) return;
 
+  // Anchor the spaceman just below the (variable-height) sticky honesty
+  // strip so it always sits cleanly below the bar even when the bar text
+  // wraps to multiple lines on narrow viewports.
+  function updateTopOffset() {
+    const strip = document.getElementById("honesty-strip");
+    if (!strip) return;
+    const offset = strip.offsetHeight + 12; // 12px breathing room
+    host.style.top = offset + "px";
+  }
+  updateTopOffset();
+  window.addEventListener("resize", updateTopOffset);
+  // Re-measure once layout has fully settled (fonts / late style).
+  requestAnimationFrame(() => requestAnimationFrame(updateTopOffset));
+
   let renderer;
   try {
     renderer = new THREE.WebGLRenderer({
