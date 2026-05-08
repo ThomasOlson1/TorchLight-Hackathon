@@ -32,9 +32,12 @@ const RADIANS_PER_FRAME = (SPIN_RPM * 2 * Math.PI) / 60 / 60;
   host.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(36, 1, 0.05, 50);
-  camera.position.set(0, 0.85, 2.5);
-  camera.lookAt(0, 0.85, 0);
+  // Tighter FOV + larger distance so the model fits head-to-feet in a
+  // square viewport with breathing room. Looking slightly higher than
+  // mid-body so the helmet has room above it.
+  const camera = new THREE.PerspectiveCamera(26, 1, 0.05, 50);
+  camera.position.set(0, 0.95, 4.6);
+  camera.lookAt(0, 0.95, 0);
 
   scene.add(new THREE.AmbientLight(0xfff5e0, 0.65));
   const key = new THREE.DirectionalLight(0xffffff, 1.0);

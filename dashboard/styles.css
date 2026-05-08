@@ -103,15 +103,28 @@ main {
 
 /* ---------- Decorative corner spaceman ---------- */
 
+/* The astronaut floats fixed-position in the top-left corner, well below the
+   sticky honesty strip so it never gets clipped. Page content is shifted
+   right by SPACEMAN_LANE on viewports where it would otherwise overlap, so
+   the spaceman never blocks text. On phones the spaceman is hidden. */
+
+:root {
+  --spaceman-w: 140px;
+  --spaceman-h: 170px;
+  --spaceman-top: 64px;   /* sits below the ~44px honesty strip */
+  --spaceman-left: 14px;
+  --spaceman-lane: calc(var(--spaceman-w) + var(--spaceman-left) + 12px);
+}
+
 #corner-spaceman {
   position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 150px;
-  height: 150px;
-  z-index: 200;
+  top: var(--spaceman-top);
+  left: var(--spaceman-left);
+  width: var(--spaceman-w);
+  height: var(--spaceman-h);
+  z-index: 50;
   pointer-events: none;
-  filter: drop-shadow(0 4px 10px rgba(28, 22, 8, 0.18));
+  filter: drop-shadow(0 6px 14px rgba(28, 22, 8, 0.16));
 }
 
 #corner-spaceman canvas {
@@ -120,8 +133,21 @@ main {
   display: block;
 }
 
+/* On viewports narrower than (max-content-width 1240px + spaceman lane * 2),
+   the spaceman would overlap the centered main column. Push the page content
+   right by exactly one lane so the spaceman lives in the freed-up gutter. */
+@media (max-width: 1540px) {
+  header.page-header,
+  main,
+  footer {
+    padding-left: calc(24px + var(--spaceman-lane));
+  }
+}
+
 @media (max-width: 720px) {
-  #corner-spaceman { width: 96px; height: 96px; top: 8px; left: 8px; }
+  /* On phones the spaceman dominates and there's no gutter to put him in. */
+  #corner-spaceman { display: none; }
+  header.page-header, main, footer { padding-left: 24px; }
 }
 
 /* ---------- Honesty strip (sticky telemetry banner) ---------- */
