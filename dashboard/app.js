@@ -939,8 +939,10 @@ async function createHeroBody3D({ host, getCrewId, getTimepoint, getScores, onSi
   const halfD = size.z / 2;
   console.log("[hero body] model bbox size:", size, "center:", finalBox.getCenter(new THREE.Vector3()));
 
-  // Frame the camera to fit the model with a comfortable margin.
-  const camDistance = Math.max(size.y, size.x) * 1.65;
+  // Frame the camera to fit the model head-to-toe with margin. With
+  // FOV 28 the visible vertical extent at distance D is ~0.5*D, so
+  // D = 3*H gives ~50% headroom (model fills ~67% of frame height).
+  const camDistance = Math.max(size.y, size.x * 1.4) * 3.0;
   camera.position.set(0, 0, camDistance);
   camera.lookAt(0, 0, 0);
 

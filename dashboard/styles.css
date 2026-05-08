@@ -2758,24 +2758,23 @@ footer {
   color: rgba(241, 234, 216, 0.78);
   white-space: nowrap;
 }
-.blood-legend .status-dot {
-  display: inline-block;
-  width: 10px; height: 10px;
-  border-radius: 50%;
-}
-.blood-legend .status-dot.back_to_baseline { background: var(--good); }
-.blood-legend .status-dot.mixed             { background: var(--amber); }
-.blood-legend .status-dot.still_elevated    { background: var(--bad); }
-.blood-legend .status-dot.still_decreased   { background: var(--azure); }
+/* Color-only coding for both rows. Same shape/size for status and
+   concern; the row label tells you which axis the color belongs to. */
+.blood-legend .status-dot,
 .blood-legend .concern-dot {
   display: inline-block;
-  width: 12px; height: 12px;
+  width: 11px;
+  height: 11px;
   border-radius: 50%;
-  border: 1.5px solid;
+  border: 0;
 }
-.blood-legend .concern-dot.expected   { background: var(--good-soft);  border-color: var(--good); }
-.blood-legend .concern-dot.watch      { background: var(--warn-soft);  border-color: var(--amber); }
-.blood-legend .concern-dot.follow_up  { background: var(--bad-soft);   border-color: var(--bad); }
+.blood-legend .status-dot.back_to_baseline,
+.blood-legend .concern-dot.expected     { background: var(--good); }
+.blood-legend .status-dot.mixed,
+.blood-legend .concern-dot.watch        { background: var(--amber); }
+.blood-legend .status-dot.still_elevated,
+.blood-legend .concern-dot.follow_up    { background: var(--bad); }
+.blood-legend .status-dot.still_decreased { background: var(--azure); }
 
 @media (max-width: 1100px) {
   .hero-main { grid-template-columns: 1fr !important; }
