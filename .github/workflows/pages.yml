@@ -26,6 +26,10 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          # Auto-enable Pages with the GitHub Actions source on first run,
+          # so we don't depend on a manual Settings -> Pages toggle.
+          enablement: true
 
       - name: Upload dashboard as Pages artifact
         uses: actions/upload-pages-artifact@v3
