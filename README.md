@@ -9,6 +9,10 @@
 Team: Earl, Thomas, Mollie. Built with substantial AI scaffolding (see [Use of AI](#use-of-ai)).
 Live: <https://thomasolson1.github.io/TorchLight-Hackathon/>
 
+![Recovery, Honestly — signature figure](docs/signature-figure.png)
+
+Design philosophy: see [`docs/design-philosophy.md`](docs/design-philosophy.md).
+
 ---
 
 ## Summary
